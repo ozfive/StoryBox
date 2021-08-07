@@ -34,7 +34,7 @@
 		the Raspberry Pi. using 'sudo apt-get install golang' will not get you the
 		latest version of the Go compiler and it may not compile this 
 
-		```bash
+		```shell
 		wget https://golang.org/dl/go1.16.6.linux-armv6l.tar.gz
 		
 		sudo tar -C /usr/local -xzf go1.16.6.linux-armv6l.tar.gz
@@ -50,22 +50,26 @@
 		GOPATH=$HOME/go
 
 		Update the shell with the changes.
-		```bash
+		```shell
 		source ~/.profile
 		```
 
 		Check to make sure that the go version is the correct one.
-		```bash
+		```shell
 		go version
 		```
-		Git clone this repository
-		```bash
-		git clone https://cowboysteeve@bitbucket.org/cowboysteeve/storybox.git
+		Clone this repository
+		```shell
+		git clone https://github.com/ozfive/StoryBox.git
 		```
-		
+		Install MPD
+
+		```shell
+		sudo apt install mpd
+		```
 		Install lmpdclient-dev package for the c language applications to function.
 
-		```bash
+		```shell
 		sudo apt install libmpdclient-dev
 		
 		sudo apt install git
@@ -83,13 +87,34 @@
 		sudo ninja -C output
 		
 		sudo ninja -C output install
+
+		cd ..
 		```
 
 		The previous commands make it possible to interface with the mpd player 
 		through the c applications we will now compile with gcc.
 
+		```shell
+		cd StoryBox/MainSystem/lib
+
+		gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
+		
+		mv mpdcurrentsong /home/pi/StoryBox/MainSystem/bin/
+
+		gcc -o mpdplaystate mpdplaystate.c -lmpdclient
+
+		mv mpdplaystate /home/pi/StoryBox/MainSystem/bin/
+
+		gcc -o mpdtime mpdtime.c -lmpdclient
+
+		mv mpdtime /home/pi/StoryBox/MainSystem/bin/
+
+		cd /home/pi/StoryBox/MainSystem/bin/
 
 
+		```
+
+		We have now compiled the c applications that the project uses to interface with mpd through l
 
 * Summary of set up
 

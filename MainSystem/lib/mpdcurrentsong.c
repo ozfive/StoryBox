@@ -69,7 +69,7 @@ int main(void)
 
 	conn = mpd_connection_new("localhost", 0, 0);
 
-	mpd_run_password(conn, "alraune22");
+	mpd_run_password(conn, "yL25v21jRJGMOz6P3F");
 
 	status = mpd_run_status(conn);
 

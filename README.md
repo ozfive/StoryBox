@@ -10,7 +10,7 @@
 
 * Prerequisites
 		
-	* lmpdclient-dev
+	* libmpdclient-dev
 	* A C99 compliant compiler (e.g. gcc)
 	* Meson 0.37
 	* Ninja
@@ -62,10 +62,12 @@
 		```shell
 		git clone https://github.com/ozfive/StoryBox.git
 		```
-		Install MPD
+		Install MPD and MPC
 
 		```shell
 		sudo apt install mpd
+
+		sudo apt install mpc
 		```
 		Install lmpdclient-dev package for the c language applications to function.
 

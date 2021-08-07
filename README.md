@@ -87,7 +87,7 @@
 		'y' or 'N' here. It's up to you if you would like to check out the
 		examples for the PhatBeat pHat.
 
-		Now sit back and drink some coffee.
+		Now sit back and drink some coffee...
 
 		When the script is finished executing it will ask you if you would
 		like to reboot now since changes were made to the system that
@@ -110,7 +110,7 @@
 
 		sudo apt install mpc
 		```
-		Install lmpdclient-dev package for the c language applications to function.
+		Install libmpdclient-dev package for the c language applications to function.
 
 		```shell
 		sudo apt install libmpdclient-dev

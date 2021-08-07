@@ -103,6 +103,11 @@
 		```shell
 
 		mkdir ~/.mpd/
+		mkdir ~/music
+		mkdir ~/.mpd/playlists
+		touch ~/.mpd/database
+		touch ~/.mpd/log
+		touch ~/.mpd/pid
 
 		mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf
 
@@ -153,8 +158,6 @@
 		mv mpdtime /home/pi/StoryBox/MainSystem/bin/
 
 		cd /home/pi/StoryBox/MainSystem/bin/
-
-
 		```
 
 		We have now compiled the c applications that the project uses to interface with mpd through l

@@ -62,10 +62,46 @@
 		```shell
 		git clone https://github.com/ozfive/StoryBox.git
 		```
+
+		Install the phatbeat software to be able to control mpd eventually
+		NOTE: Be sure to run these commands as the pi user and not su
+		```shell
+		cd /home/pi/Storybox/
+
+		chmod +x phatbeat.sh
+
+		./phatbeat.sh
+		```
+		When you run this script it will ask you if you want to continue
+		type 'y' for yes only after you feel comfortable that the script
+		doesn't include malicious code that can arbitrarily execute on 
+		your machine.
+
+		DISCLAIMER: I have done my best to review this script. It does
+		reach out to other sources to download things. At any point in
+		the future these sources could be compromised. I will not be 
+		held responsible in any way, shape, or form for any damage that
+		is done to your systems/network due to this script. 
+
+		When asked if you want to perform a fill install you can either choose
+		'y' or 'N' here. It's up to you if you would like to check out the
+		examples for the PhatBeat pHat.
+
+		Now sit back and drink some coffee.
+
+		When the script is finished executing it will ask you if you would
+		like to reboot now since changes were made to the system that
+		require a reboot. type 'y' and hit enter here to reboot.
+
+		This will close your ssh session to the Raspberry Pi Zero W and
+		you will need to connect again to continue with the instructions
+		below.
+
+
 		Install MPD and MPC
 
 		```shell
-		
+
 		mkdir ~/.mpd/
 
 		mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf

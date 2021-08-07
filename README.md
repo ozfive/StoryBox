@@ -102,10 +102,20 @@
 		wget http://www.uugear.com/repo/WittyPi3/install.sh
 
 		sudo sh install.sh
-		```
-		In case this doesn't exist at that location you can just use
-		the install.sh script included in lib/Wittypi3mini
 
+		```
+		In case this doesn't exist at that link you can just use
+		the install.sh script included in lib/Wittypi3mini
+		NOTE: Only execute the commands in the next block if you can
+		no longer retrieve the install.sh script for the Witty Pi 3
+		Mini hardware from the link above.
+		```shell
+		cd /home/pi/StoryBox/MainSystem/lib/
+
+		sudo sh install.sh
+		```
+
+		Refer to https://www.uugear.com/product/witty-pi-3-mini-realtime-clock-and-power-management-for-raspberry-pi/ for more information.
 		Install MPD and MPC
 
 		```shell

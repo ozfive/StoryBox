@@ -97,6 +97,14 @@
 		you will need to connect again to continue with the instructions
 		below.
 
+		Install witty pi 3 mini software.
+		```shell
+		wget http://www.uugear.com/repo/WittyPi3/install.sh
+
+		sudo sh install.sh
+		```
+		In case this doesn't exist at that location you can just use
+		the install.sh script included in lib/Wittypi3mini
 
 		Install MPD and MPC
 

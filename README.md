@@ -65,8 +65,11 @@
 		Install MPD and MPC
 
 		```shell
-		mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf
 		
+		mkdir ~/.mpd/
+
+		mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf
+
 		sudo apt install mpd
 
 		sudo apt install mpc

@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/kataras/iris/v12"
+
 	// "github.com/kataras/iris/v12/middleware/basicauth"
 
 	"github.com/didip/tollbooth/v6"
@@ -132,8 +134,7 @@ func newApp(debug bool) *iris.Application {
 	   api.Use(authentication)
 	*/
 
-	// Set a rate-limit of 15 seconds to hold off on reloading albums/stories
-	// if RFID tag is held over the reader too long.
+	// Set a rate-limit of 15 seconds to hold off on reloading albums/stories if RFID tag is held over the reader too long.
 	limiter := tollbooth.NewLimiter(15, nil)
 
 	database, _ := sql.Open("sqlite3", "./rfids.db")
@@ -195,7 +196,6 @@ func newApp(debug bool) *iris.Application {
 	api.Post("/rfid/", tollboothic.LimitHandler(limiter), func(ctx iris.Context) {
 
 		rfid := new(RFID)
-		// response := new(Response)
 
 		err := ctx.ReadJSON(&rfid)
 
@@ -435,6 +435,182 @@ func newApp(debug bool) *iris.Application {
 	return api
 }
 
+// CreatePlaylist creates a new playlist in the database.
+func CreatePlaylist(url string, playlistname string) {
+
+	// Create the playlist in the database.
+	// If the playlist already exists in the database, return a 400 error with appropriate message.
+	// If the playlist does not exist in the database, create the playlist in the database.
+	// Return a 200 status code with appropriate message.
+
+	var id int = 0
+
+	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+	rows := database.QueryRow(sql)
+
+	err := rows.Scan(&id, &url, &playlistname)
+
+	if err != nil {
+		ctx.StatusCode(400)
+
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "Something went wrong with the database query. Please try again.",
+		})
+
+	} else {
+
+		if url != "" {
+
+			sql := "INSERT INTO playlist (url, playlistname) VALUES ('" + url + "', '" + playlistname + "');"
+
+			_, err := database.Exec(sql)
+
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+		} else {
+
+			ctx.StatusCode(400)
+
+			ctx.JSON(iris.Map{
+				"status_code": 400,
+				"message":     "The playlist already exists in the database.",
+			})
+
+		}
+
+	}
+
+}
+
+// DeletePlaylist deletes a playlist from the database.
+func DeletePlaylist(url string, playlistname string) {
+
+	// Delete the playlist from the database.
+	// If the playlist does not exist in the database, return a 400 error with appropriate message.
+	// If the playlist exists in the database, delete the playlist from the database.
+	// Return a 200 status code with appropriate message.
+
+	var id int = 0
+	var url string = ""
+	var playlistname string = ""
+
+	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+	rows := database.QueryRow(sql)
+
+	err := rows.Scan(&id, &url, &playlistname)
+
+	if err != nil {
+
+		ctx.StatusCode(400)
+
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "Something went wrong with the database query. Please try again.",
+		})
+
+	} else {
+
+		if url != "" {
+
+			sql := "DELETE FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+			// TODO - Delete the playlist from the database.
+
+		} else {
+
+			ctx.StatusCode(400)
+
+			ctx.JSON(iris.Map{
+				"status_code": 400,
+				"message":     "The playlist does not exist in the database.",
+			})
+
+		}
+
+	}
+
+}
+
+// GetPlaylist gets a playlist from the database.
+func GetPlaylist(url string, playlistname string) {
+
+	// Get the playlist from the database.
+	// If the playlist does not exist in the database, return a 400 error with appropriate message.
+	// If the playlist exists in the database, return the playlist from the database.
+	// Return a 200 status code with appropriate message.
+
+	var id int = 0
+	var url string = ""
+	var playlistname string = ""
+
+	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+	rows := database.QueryRow(sql)
+
+	err := rows.Scan(&id, &url, &playlistname)
+
+	if err != nil {
+
+		ctx.StatusCode(400)
+
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "Something went wrong with the database query. Please try again.",
+		})
+
+	} else {
+
+		if url != "" {
+
+			sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+			rows := database.QueryRow(sql)
+
+			err := rows.Scan(&id, &url, &playlistname)
+
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+		} else {
+
+			ctx.StatusCode(400)
+
+			ctx.JSON(iris.Map{
+				"status_code": 400,
+				"message":     "The playlist does not exist in the database.",
+			})
+
+		}
+
+	}
+
+}
+
+// Create a function called playErrorSound() that plays the error sound.
+func playErrorSound() {
+
+	cmd := "mpg123-alsa"
+
+	// Final location: /etc/sound/error.mp3
+	errorSoundFile := "subtleErrorBell.mp3"
+
+	args := []string{errorSoundFile}
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+
+		log.Println(os.Stderr, err)
+
+	}
+
+}
+
 func playReadySound() {
 
 	cmd := "mpg123-alsa"
@@ -499,6 +675,7 @@ func playLowBatterySound(batteryLevel int) {
 	}
 }
 
+/*
 func CreatePlaylist(track string, playlist string) {
 
 	playlistFile := "/var/lib/mpd/playlists/" + playlist + ".m3u"
@@ -522,95 +699,21 @@ func CreatePlaylist(track string, playlist string) {
 	}
 
 }
+*/
 
-// playCustomMessage uses google text to speech https://github.com/pndurette/gTTS
-// sudo pip install gTTS
-// CLI: gtts-cli "come for dinner" | mpg123 -
+/*
+sudo pip install gTTS
+CLI: gtts-cli "come for dinner" | mpg123 -
+*/
+
+// Use the Google text to speech engine library at this location https://github.com/pndurette/gTTS to play a custom message.
+// The function should take a string as an argument and play the string as a message.
 func playCustomMessage(message string) {
 
 	cmd := "gtts-cli"
 
-	log.Println(message)
 	args := []string{message, "|", "mpg123-alsa", "-"}
-
-	log.Println(cmd, args)
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
-}
-
-func PlayPlaylist() {
-
-	cmd := "mpc"
-
-	args := []string{"--host", "alraune22@localhost", "play"}
-
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
-}
-
-func PausePlaylist() {
-
-	cmd := "mpc"
-
-	args := []string{"--host", "alraune22@localhost", "pause"}
-
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
-}
-
-func StopPlaylist() {
-
-	cmd := "mpc"
-
-	args := []string{"--host", "alraune22@localhost", "stop"}
-
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
-}
-
-func LoadPlaylist(playlist string) {
-
-	cmdClear := "mpc"
-
-	argsClear := []string{"--host", "alraune22@localhost", "clear"}
-
-	if err := exec.Command(cmdClear, argsClear...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
-	cmdUpdate := "mpc"
-
-	argsUpdate := []string{"--host", "alraune22@localhost", "update"}
-
-	if err := exec.Command(cmdUpdate, argsUpdate...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
-	cmdLoad := "mpc"
-
-	argsLoad := []string{"--host", "alraune22@localhost", "load", playlist}
-
-	if err := exec.Command(cmdLoad, argsLoad...).Run(); err != nil {
 
 		log.Println(os.Stderr, err)
 
@@ -628,6 +731,14 @@ func ClearPlaylist() {
 
 		log.Println(os.Stderr, err)
 
+		playErrorSound()
+		playCustomMessage("The playlist could not be cleared. Please try again.")
+
+	} else {
+
+		playAknowledgeSound()
+		playCustomMessage("The playlist has been cleared.")
+
 	}
 
 	cmdUpdate := "mpc"
@@ -637,6 +748,93 @@ func ClearPlaylist() {
 	if err := exec.Command(cmdUpdate, argsUpdate...).Run(); err != nil {
 
 		log.Println(os.Stderr, err)
+
+	}
+
+}
+
+func LoadPlaylist(playlist string) {
+
+	ClearPlaylist()
+
+	cmdLoad := "mpc"
+
+	argsLoad := []string{"--host", "alraune22@localhost", "load", playlist}
+
+	if err := exec.Command(cmdLoad, argsLoad...).Run(); err != nil {
+
+		log.Println(os.Stderr, err)
+
+		playErrorSound()
+		playCustomMessage("The playlist could not be loaded. Please try again.")
+
+	} else {
+
+		playAknowledgeSound()
+		playCustomMessage("The playlist has been loaded.")
+	}
+
+}
+
+func PlayPlaylist() {
+
+	cmd := "mpc"
+
+	args := []string{"--host", "alraune22@localhost", "play"}
+
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+
+		log.Println(os.Stderr, err)
+
+		playErrorSound()
+		playCustomMessage("The playlist could not be played. Please try again.")
+
+	} else {
+
+		log.Println("Playing playlist: ", playlistID)
+
+	}
+
+}
+
+func PausePlaylist() {
+
+	cmd := "mpc"
+
+	args := []string{"--host", "alraune22@localhost", "pause"}
+
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+
+		log.Println(os.Stderr, err)
+		playErrorSound()
+		playCustomMessage("The playlist could not be paused. Please try again.")
+
+	} else {
+
+		log.Println("Pausing playlist: ", playlistID)
+		playAknowledgeSound()
+		playCustomMessage("The playlist has been paused.")
+	}
+
+}
+
+func StopPlaylist() {
+
+	cmd := "mpc"
+
+	args := []string{"--host", "alraune22@localhost", "stop"}
+
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+
+		log.Println(os.Stderr, err)
+		playErrorSound()
+		playCustomMessage("The playlist could not be stopped. Please try again.")
+
+	} else {
+
+		log.Println("Stopping playlist: ", playlistID)
+		playAknowledgeSound()
+		playCustomMessage("The playlist has been stopped.")
 
 	}
 
@@ -661,6 +859,10 @@ func GetCurrentTrackName() (currentTrackName string) {
 	if err != nil {
 		log.Println(os.Stderr, err)
 		currentTrackName = "ERROR"
+
+		playErrorSound()
+		playCustomMessage("The current track could not be retrieved. Please try again.")
+
 	} else {
 		currentTrackName = strings.Trim(out.String(), "\n")
 	}

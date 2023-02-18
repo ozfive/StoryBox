@@ -25,14 +25,14 @@
 		sudo apt update
 		sudo apt upgrade
 
-		Download go 1.16.6 by using wget. If by the time you are reading this  `
+		Download go 1.16.6 by using wget. If by the time you are reading this
 		there is a newer go compiler available you can try and download it from
-
+		
 		https://golang.org/dl/
-
+		
 		NOTE: It needs to be the linux arm v6 compiler to build the go applications on
 		the Raspberry Pi. using 'sudo apt-get install golang' will not get you the
-		latest version of the Go compiler and it may not compile this 
+		latest version of the Go compiler and it may not compile this.
 
 		```shell
 		wget https://golang.org/dl/go1.16.6.linux-armv6l.tar.gz

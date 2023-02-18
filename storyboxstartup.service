@@ -1,10 +1,19 @@
- [Unit]
- Description=Storybox Startup Service that plays a sound when the storybox has finished booting.
- After=multi-user.target
+[Unit]
+Description=Storybox Startup Service that plays a sound when the storybox has finished booting.
+After=multi-user.target
 
- [Service]
- Type=idle
- ExecStart=/usr/local/bin/Startup
+[Service]
+Type=idle
+User=storybox
+Group=storybox
+WorkingDirectory=/home/storybox
+Restart=always
+RestartSec=30
+ExecStart=/usr/local/bin/Startup
+# LimitCPU=10%
+# LimitRAM=100M
+StandardOutput=journal
+StandardError=journal
 
- [Install]
- WantedBy=multi-user.target
+[Install]
+WantedBy=multi-user.target

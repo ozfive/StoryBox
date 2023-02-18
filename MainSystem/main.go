@@ -109,7 +109,7 @@ func main() {
 	   defer phatbeat.Clean()
 
 	   select {}
-	
+
 	*/
 }
 
@@ -217,7 +217,6 @@ func newApp(debug bool) *iris.Application {
 
 			if rfid.TagID == "" {
 				// The TagID parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				// Unprocessable Entity
 				ctx.StatusCode(422)
 
 				ctx.JSON(iris.Map{
@@ -227,7 +226,7 @@ func newApp(debug bool) *iris.Application {
 
 			} else if rfid.UniqueID == "" {
 				// The UniqueID parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				// Unprocessable Entity
+
 				ctx.StatusCode(422)
 
 				ctx.JSON(iris.Map{
@@ -297,6 +296,140 @@ func newApp(debug bool) *iris.Application {
 
 		}
 
+	})
+
+	// Create an api endpoint to create a new RFID tag.
+	api.Post("/rfid/create/", tollboothic.LimitHandler(limiter), func(ctx iris.Context) {
+
+		rfid := new(RFID)
+
+		err := ctx.ReadJSON(&rfid)
+
+		if err != nil {
+
+			if err.Error() == "unexpected end of JSON input" {
+				ctx.StatusCode(400)
+				ctx.JSON(iris.Map{
+					"status_code": 400,
+					"message":     "Malformed JSON input.",
+				})
+			} else if err.Error() == "invalid character '\"' after object key:value pair" {
+				ctx.StatusCode(400)
+				ctx.JSON(iris.Map{
+					"status_code": 400,
+					"message":     "Missing comma after object key:value pair in JSON input.",
+				})
+			}
+
+		} else {
+
+			if rfid.TagID == "" {
+				// The TagID parameter in the JSON input is empty. Return a 422 error with appropriate message.
+				ctx.StatusCode(422)
+
+				ctx.JSON(iris.Map{
+					"status_code": 422,
+					"message":     "The TagID value was empty.",
+				})
+
+			} else if rfid.UniqueID == "" {
+				// The UniqueID parameter in the JSON input is empty. Return a 422 error with appropriate message.
+				ctx.StatusCode(422)
+
+				ctx.JSON(iris.Map{
+					"status_code": 422,
+					"message":     "The UniqueID value was empty.",
+				})
+
+			} else if rfid.URL == "" {
+				// The URL parameter in the JSON input is empty. Return a 422 error with appropriate message.
+				ctx.StatusCode(422)
+
+				ctx.JSON(iris.Map{
+					"status_code": 422,
+					"message":     "The URL value was empty.",
+				})
+
+			} else if rfid.PlaylistName == "" {
+				// The PlaylistName parameter in the JSON input is empty. Return a 422 error with appropriate message.
+				ctx.StatusCode(422)
+
+				ctx.JSON(iris.Map{
+					"status_code": 422,
+					"message":     "The PlaylistName value was empty.",
+				})
+
+			} else {
+
+				// Create the RFID tag in the database.
+				// If the RFID tag already exists in the database, return a 400 error with appropriate message.
+				// If the RFID tag does not exist in the database, create the RFID tag in the database.
+				// Return a 200 status code with appropriate message.
+
+				var id int = 0
+				var tagid string = ""
+				var uniqueid string = ""
+				var url string = ""
+				var playlistname string = ""
+
+				sql := "SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '" + rfid.TagID + "' AND uniqueid = '" + rfid.UniqueID + "';"
+
+				rows := database.QueryRow(sql)
+
+				err := rows.Scan(&id, &tagid, &uniqueid, &url, &playlistname)
+
+				if err != nil {
+
+					ctx.StatusCode(400)
+
+					ctx.JSON(iris.Map{
+						"status_code": 400,
+						"message":     "Something went wrong with the database query. Please try again.",
+					})
+
+				} else {
+
+					if tagid != "" {
+						ctx.StatusCode(400)
+
+						ctx.JSON(iris.Map{
+							"status_code": 400,
+							"message":     "The RFID tag already exists in the database.",
+						})
+
+					} else {
+
+						sql := "INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES ('" + rfid.TagID + "', '" + rfid.UniqueID + "', '" + rfid.URL + "', '" + rfid.PlaylistName + "');"
+
+						_, err := database.Exec(sql)
+
+						if err != nil {
+
+							ctx.StatusCode(400)
+
+							ctx.JSON(iris.Map{
+								"status_code": 400,
+								"message":     "Something went wrong with the database query. Please try again.",
+							})
+
+						} else {
+
+							ctx.StatusCode(200)
+
+							ctx.JSON(iris.Map{
+								"status_code": 200,
+								"message":     "The RFID tag was successfully created in the database.",
+							})
+
+						}
+
+					}
+
+				}
+
+			}
+
+		}
 	})
 
 	return api

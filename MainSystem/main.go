@@ -163,7 +163,7 @@ func newApp(debug bool) *iris.Application {
 
 		ctx.JSON(iris.Map{
 			"status_code": 200,
-			"message":     "INFO: The RFID tag exists. Playlist queued!",
+			"message":     "Current track name",
 			"data":        trackName,
 		})
 
@@ -175,7 +175,7 @@ func newApp(debug bool) *iris.Application {
 		currentPlayState := GetCurrentPlayState()
 		ctx.JSON(iris.Map{
 			"status_code": 200,
-			"message":     "INFO: The RFID tag exists. Playlist queued!",
+			"message":     "Current play state",
 			"data":        currentPlayState,
 		})
 
@@ -187,7 +187,7 @@ func newApp(debug bool) *iris.Application {
 
 		ctx.JSON(iris.Map{
 			"status_code": 200,
-			"message":     "INFO: The RFID tag exists. Playlist queued!",
+			"message":     "Current track time",
 			"data":        currentTrackTime,
 		})
 
@@ -832,7 +832,7 @@ func PausePlaylist(playlist string) {
 
 }
 
-func StopPlaylist(playlist string) {
+func StopPlaylist() {
 
 	cmd := "mpc"
 
@@ -846,7 +846,7 @@ func StopPlaylist(playlist string) {
 
 	} else {
 
-		log.Println("Stopping playlist: ", playlist)
+		log.Println("Stopping playlist")
 		playAknowledgeSound()
 		playCustomMessage("The playlist has been stopped.")
 

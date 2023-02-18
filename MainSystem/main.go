@@ -39,7 +39,7 @@ type RFID struct {
 func main() {
 	// playReadySound()
 
-	debug := true
+	debug := false
 
 	localIPAddress := "localhost"
 	localIPPort := "3001"

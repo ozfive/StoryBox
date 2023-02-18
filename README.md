@@ -11,13 +11,13 @@
 * Prerequisites
 		
 	* libmpdclient-dev
-	* A C99 compliant compiler (e.g. gcc)
+	* A C99 compliant compiler (e.g. gcc) - GCC Comes pre-installed on RPi-Zero-W
 	* Meson 0.37
 	* Ninja
 	* Go 1.16 or later
-	* python
+	* python - Comes pre-installed on RPi-Zero-W
 	* gtts-cli
-	* mpg123-alsa
+	* mpg123-alsa - Comes pre-installed on RPi-Zero-W
 	* mpc
 	* mpd
 
@@ -41,13 +41,13 @@
 
 		rm go1.16.6.linux-armv6l.tar.gz
 
-		sudo nano ~/.profile
+		sudo nano ~/.bashrc
 		```
 
-		add the following to the .profile file
+		add the following to the .bashrc file
 
 		PATH=$PATH:/usr/local/go/bin
-		GOPATH=$HOME/go
+		GOPATH=$HOME/pi/go/
 
 		Update the shell with the changes.
 		```shell
@@ -97,6 +97,8 @@
 		you will need to connect again to continue with the instructions
 		below.
 
+		Refer to https://www.uugear.com/product/witty-pi-3-mini-realtime-clock-and-power-management-for-raspberry-pi/ for more information.
+		
 		Install witty pi 3 mini software.
 		```shell
 		wget http://www.uugear.com/repo/WittyPi3/install.sh
@@ -114,9 +116,48 @@
 
 		sudo sh install.sh
 		```
+		
+		Now we need to enable the SPI interface for the RFID-RC522 reader
+		to function properly. To do this we will open the GUI raspi-config
+		tool by executing the following command.
+		```shell
+		sudo raspi-config
+		```
 
-		Refer to https://www.uugear.com/product/witty-pi-3-mini-realtime-clock-and-power-management-for-raspberry-pi/ for more information.
-		Install MPD and MPC
+		Use the arrow keys to select "5 Interfacing Options". Once you 
+		have this option selected, press Enter.
+
+		On this next screen, you want to use your arrow keys to select 
+		"P4 SPI", again press Enter to select the option once it is 
+		highlighted.
+
+		You will now be asked if you want to enable the SPI Interface, 
+		select Yes with your arrow keys and press Enter to proceed. 
+
+		Once the SPI interface has been successfully enabled by the 
+		raspi-config tool you should see the following text appear 
+		on the screen, "The SPI interface is enabled".
+
+		To fully enable the SPI interface please reboot your Raspberry Pi 
+		Zero W
+		```shell
+		reboot -n
+		```
+
+		When your Raspberry Pi Zero W has rebooted execute the following command
+		```shell
+		lsmod | grep spi
+		```
+		
+		If you see spi_bcm2835, then you can proceed.
+
+		Install Google Text To Speech CLI
+		```shell
+		pip install gTTS
+		```
+		
+
+		Install MPD and MPC 
 
 		```shell
 
@@ -178,7 +219,9 @@
 		cd /home/pi/StoryBox/MainSystem/bin/
 		```
 
-		We have now compiled the c applications that the project uses to interface with mpd through l
+		We have now compiled the c applications that the project uses to 
+		interface with mpd through lmpdclient library.
+
 
 * Summary of set up
 
@@ -186,33 +229,59 @@
 	
 	STEP 1: Once the storybox repo is cloned on your Raspberry Pi go into the Startup folder and run 
 
-	```
+	```shell
+
+	mkdir /home/pi/go/
+	mkdir /home/pi/go/src
+	
+	cp -r /home/pi/StoryBox /home/pi/go/src
+
+	cd /home/pi/go/src/Storybox/Startup
+	
+	go mod init Startup
+
+	go mod tidy
+
 	go build
 	```
 
-	STEP 2: Move the binary you just built to /usr/local/bin by typing 
+	STEP 2: Copy the binary you just built to /usr/local/bin by typing 
 
-	```
-	sudo mv Startup /usr/local/bin
+	```shell
+	sudo cp Startup /usr/local/bin
 	```
 
 	This makes the Startup binary available to all users on the system. If for some reason you want to
 	execute the Startup binary through another user it will be available system wide.
 
-	STEP 3: Move the storyboxstartup.service file to lib/systemd/system/ by going into the storybox 
-	directory where the storyboxstartup.service file is located and typing 
+	STEP 3: Copy the storyboxstartup.service file to lib/systemd/system/ by going into the storybox 
+	directory where the storyboxstartup.service file is located and typing: 
 
-	```
-	sudo mv storyboxstartup.service /lib/systemd/system/ 
-	```
-	This should be followed by:
+	```shell
+	cd /home/pi/go/src/StoryBox/
 
+	sudo cp storyboxstartup.service /lib/systemd/system/ 
 	```
+
+	The next command sets the permissions of the unit file to 644 
+
+	```shell
 	sudo chmod 644 /lib/systemd/system/storyboxstartup.service
 	```
 
-	What this does is sets the permissions of the unit file to '644'
+	Now we want to enable the storyboxstartup.service unit file
+	to be started at startup. 
+	
+	```shell
+	sudo systemctl enable storyboxstartup.service
 
+	sudo systemctl start storyboxstartup.service
+	```
+
+
+	
+
+	
 * Dependencies
 
 REQUIRES:

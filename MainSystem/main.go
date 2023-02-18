@@ -276,9 +276,9 @@ func newApp(debug bool) *iris.Application {
 						"data":        data,
 					})
 					ClearPlaylist()
-					CreatePlaylist(rfid.URL, rfid.PlaylistName)
+					CreatePlaylist(rfid.URL, rfid.PlaylistName, ctx)
 					LoadPlaylist(rfid.PlaylistName)
-					PlayPlaylist()
+					PlayPlaylist(rfid.PlaylistName)
 
 				} else {
 
@@ -435,8 +435,20 @@ func newApp(debug bool) *iris.Application {
 	return api
 }
 
+// dbConn() (db *sql.DB) initializes a single connection to the database.
+func dbConn() (database *sql.DB) {
+
+	database, err := sql.Open("sqlite3", "./rfids.db")
+
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return database
+}
+
 // CreatePlaylist creates a new playlist in the database.
-func CreatePlaylist(url string, playlistname string) {
+func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 
 	// Create the playlist in the database.
 	// If the playlist already exists in the database, return a 400 error with appropriate message.
@@ -446,6 +458,8 @@ func CreatePlaylist(url string, playlistname string) {
 	var id int = 0
 
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+	database := dbConn()
 
 	rows := database.QueryRow(sql)
 
@@ -488,7 +502,7 @@ func CreatePlaylist(url string, playlistname string) {
 }
 
 // DeletePlaylist deletes a playlist from the database.
-func DeletePlaylist(url string, playlistname string) {
+func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 
 	// Delete the playlist from the database.
 	// If the playlist does not exist in the database, return a 400 error with appropriate message.
@@ -496,12 +510,12 @@ func DeletePlaylist(url string, playlistname string) {
 	// Return a 200 status code with appropriate message.
 
 	var id int = 0
-	var url string = ""
-	var playlistname string = ""
 
-	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+	sqlSelect := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
 
-	rows := database.QueryRow(sql)
+	database := dbConn()
+
+	rows := database.QueryRow(sqlSelect)
 
 	err := rows.Scan(&id, &url, &playlistname)
 
@@ -518,7 +532,7 @@ func DeletePlaylist(url string, playlistname string) {
 
 		if url != "" {
 
-			sql := "DELETE FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+			sqlDelete := "DELETE FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
 
 			// TODO - Delete the playlist from the database.
 
@@ -538,7 +552,7 @@ func DeletePlaylist(url string, playlistname string) {
 }
 
 // GetPlaylist gets a playlist from the database.
-func GetPlaylist(url string, playlistname string) {
+func GetPlaylist(url string, playlistname string, ctx iris.Context) {
 
 	// Get the playlist from the database.
 	// If the playlist does not exist in the database, return a 400 error with appropriate message.
@@ -546,10 +560,10 @@ func GetPlaylist(url string, playlistname string) {
 	// Return a 200 status code with appropriate message.
 
 	var id int = 0
-	var url string = ""
-	var playlistname string = ""
 
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+
+	database := dbConn()
 
 	rows := database.QueryRow(sql)
 
@@ -776,7 +790,7 @@ func LoadPlaylist(playlist string) {
 
 }
 
-func PlayPlaylist() {
+func PlayPlaylist(playlist string) {
 
 	cmd := "mpc"
 
@@ -791,13 +805,13 @@ func PlayPlaylist() {
 
 	} else {
 
-		log.Println("Playing playlist: ", playlistID)
+		log.Println("Playing playlist: ", playlist)
 
 	}
 
 }
 
-func PausePlaylist() {
+func PausePlaylist(playlist string) {
 
 	cmd := "mpc"
 
@@ -811,14 +825,14 @@ func PausePlaylist() {
 
 	} else {
 
-		log.Println("Pausing playlist: ", playlistID)
+		log.Println("Pausing playlist: ", playlist)
 		playAknowledgeSound()
 		playCustomMessage("The playlist has been paused.")
 	}
 
 }
 
-func StopPlaylist() {
+func StopPlaylist(playlist string) {
 
 	cmd := "mpc"
 
@@ -832,7 +846,7 @@ func StopPlaylist() {
 
 	} else {
 
-		log.Println("Stopping playlist: ", playlistID)
+		log.Println("Stopping playlist: ", playlist)
 		playAknowledgeSound()
 		playCustomMessage("The playlist has been stopped.")
 

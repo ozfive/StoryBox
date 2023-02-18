@@ -532,9 +532,18 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 
 		if url != "" {
 
-			sqlDelete := "DELETE FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
+			statement, err := database.Prepare("DELETE FROM playlist WHERE url =? AND playlistname =?")
 
-			// TODO - Delete the playlist from the database.
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+
+			_, err = statement.Exec(url, playlistname)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
 
 		} else {
 

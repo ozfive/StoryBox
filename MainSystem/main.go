@@ -26,10 +26,6 @@ import (
 	// "time"
 )
 
-const (
-	readingJSONParamsError = "Error while reading JSON parameters: <b>"
-)
-
 type RFID struct {
 	ID           int    `json:"id"`
 	TagID        string `json:"tagid"`

@@ -10,7 +10,9 @@ The StoryBox project includes several software components, including a startup s
 Dev hardware I put together to work on this project:
 
 [Box-Front](https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg)
+
 [Box-Internals](https://github.com/ozfive/StoryBox/blob/main/github/Box-Internals.jpg)
+
 ### How do I get set up? ###
 
 #### Prerequisites ####

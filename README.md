@@ -302,7 +302,7 @@ interface with mpd through lmpdclient library.
 
 REQUIRES:
 
-	Go 1.19 or later
+	Go 1.19.6 or later
 	python
 	gtts-cli
 	mpg123-alsa

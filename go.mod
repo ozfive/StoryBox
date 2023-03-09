@@ -1,6 +1,6 @@
 module StoryBox
 
-go 1.20
+go 1.19
 
 require (
 	github.com/didip/tollbooth/v6 v6.1.2

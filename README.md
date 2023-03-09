@@ -4,7 +4,7 @@
 
 This repository contains the source code for my StoryBox project, which is a Raspberry Pi-based device that plays audio stories for children. The device uses an RFID reader to identify story/song/album cards, and then plays the corresponding audio through its built-in speaker. 
 
-The StoryBox project includes several software components, including a startup script, a Go application for interacting with the RFID reader, and installation bash scripts to install drivers for the hardware.
+The StoryBox project includes several software components, including a startup script, a Go application for interacting with the RFID reader. The installation shell scripts reside in their own repository now. [StoryBoxShellScripts](https://github.com/ozfive/StoryBoxShellScripts)
 
 ### Images
 Dev hardware I put together to work on this project:

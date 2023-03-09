@@ -293,10 +293,6 @@ interface with mpd through lmpdclient library.
 
 	sudo systemctl start storyboxstartup.service
 	```
-
-
-	
-
 	
 * Dependencies
 
@@ -328,5 +324,9 @@ REQUIRES:
 ### Who do I talk to? ###
 
 * Repo owner or admin
+[@ozfive](https://github.com/ozfive)
 
 * Other community or team contact
+
+## License
+This program is licensed under the [MIT License](https://opensource.org/license/mit/). See the LICENSE file for details.

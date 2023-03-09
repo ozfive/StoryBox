@@ -21,7 +21,7 @@ Dev hardware I put together to work on this project:
 * A C99 compliant compiler (e.g. gcc)
 * Meson 0.37
 * Ninja
-* Go 1.16 or later
+* Go 1.19.6 or later
 * python - Comes pre-installed on RPi-Zero-W
 * gtts-cli
 * mpg123-alsa - Comes pre-installed on RPi-Zero-W
@@ -302,7 +302,7 @@ interface with mpd through lmpdclient library.
 
 REQUIRES:
 
-	Go 1.16 or later
+	Go 1.19 or later
 	python
 	gtts-cli
 	mpg123-alsa

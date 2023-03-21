@@ -515,59 +515,31 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 
 // GetPlaylist gets a playlist from the database.
 func GetPlaylist(url string, playlistname string, ctx iris.Context) {
-
-	// Get the playlist from the database.
-	// If the playlist does not exist in the database, return a 400 error with appropriate message.
-	// If the playlist exists in the database, return the playlist from the database.
-	// Return a 200 status code with appropriate message.
-
-	var id int = 0
-
-	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
-
 	database := dbConn()
+	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
+	row := database.QueryRow(sql, url, playlistname)
 
-	rows := database.QueryRow(sql)
+	var id int
+	var urlFromDB string
+	var playlistNameFromDB string
 
-	err := rows.Scan(&id, &url, &playlistname)
+	err := row.Scan(&id, &urlFromDB, &playlistNameFromDB)
 
 	if err != nil {
-
 		ctx.StatusCode(400)
-
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "Something went wrong with the database query. Please try again.",
+			"message":     "The playlist does not exist in the database.",
 		})
-
-	} else {
-
-		if url != "" {
-
-			sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
-
-			rows := database.QueryRow(sql)
-
-			err := rows.Scan(&id, &url, &playlistname)
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-		} else {
-
-			ctx.StatusCode(400)
-
-			ctx.JSON(iris.Map{
-				"status_code": 400,
-				"message":     "The playlist does not exist in the database.",
-			})
-
-		}
-
+		return
 	}
 
+	ctx.StatusCode(200)
+	ctx.JSON(iris.Map{
+		"id":           id,
+		"url":          urlFromDB,
+		"playlistname": playlistNameFromDB,
+	})
 }
 
 // playErrorNotification plays the error notification.

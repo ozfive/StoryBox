@@ -1,9 +1,9 @@
-package main
+package startup
 
 import (
+	"log"
 	"os"
 	"os/exec"
-	"log" 
 )
 
 func playStartUpSound() {

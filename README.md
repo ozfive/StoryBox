@@ -37,10 +37,11 @@ cd /home/pi
 git clone git@github.com:[YOUR GIT USERNAME]/StoryBox.git
 ```
 
-4. Navigate to the /home/pi/Storybox/ directory and make sure that install.sh is executable by running the following command in your terminal:
+4. Navigate to the /home/pi/Storybox/ directory and make sure that install.sh is executable by running the following commands in your terminal:
 
 ```shell
 cd Storybox/
+
 chmod +x install.sh
 
 ./install.sh

@@ -57,378 +57,243 @@ func main() {
 }
 
 // basicAuthUser string, basicAuthPassword string
+// statement, _ = database.Prepare("INSERT INTO rfid (tagid, uniqueid) VALUES (?, ?)")
+// statement.Exec("167697462420", "Nalini")
+// statement, _ = database.Prepare("UPDATE rfid SET tagid = '167697462420', playlistname = 'remotePlaylist' WHERE uniqueid = 'Nalini'")
+// statement.Exec()
+
+/*
+	UPDATE rfid
+	SET url = 'https://olm-build-artifacts.sfo2.cdn.digitaloceanspaces.com/track.mp3',
+	playlistname = 'remotePlaylist'
+	WHERE uniqueid = 'Nalini'
+*/
 
 func newApp(debug bool) *iris.Application {
-
 	api := iris.New()
 
-	/*
-	   authConfig := basicauth.Config{
-
-	       Users:   map[string]string{basicAuthUser: basicAuthPassword},
-	       Realm:   "Authorization Required",
-	       Expires: time.Duration(1) * time.Minute,
-	   }
-
-	   authentication := basicauth.New(authConfig)
-
-	   api.Use(authentication)
-	*/
-
-	// Set a rate-limit of 15 seconds to hold off on reloading albums/stories if RFID tag is held over the reader too long.
 	limiter := tollbooth.NewLimiter(15, nil)
 
 	database, _ := sql.Open("sqlite3", "./rfids.db")
 
-	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS rfid (id INTEGER PRIMARY KEY AUTOINCREMENT, tagid TEXT, uniqueid TEXT, url TEXT, playlistname TEXT)")
+	createDatabaseTable(database)
 
-	statement.Exec()
+	api.Get("/currentstats/", currentStatsHandler)
+	api.Get("/stopcurrentplaylist/", stopCurrentPlaylistHandler)
+	api.Get("/playlistelapsedtime/", playlistElapsedTimeHandler)
+	api.Post("/rfid/", tollboothic.LimitHandler(limiter), rfidHandler(database))
+	api.Post("/rfid/create/", tollboothic.LimitHandler(limiter), rfidCreateHandler(database))
 
-	// statement, _ = database.Prepare("INSERT INTO rfid (tagid, uniqueid) VALUES (?, ?)")
-
-	// statement.Exec("167697462420", "Nalini")
-
-	// statement, _ = database.Prepare("UPDATE rfid SET tagid = '167697462420', playlistname = 'remotePlaylist' WHERE uniqueid = 'Nalini'")
-
-	// statement.Exec()
-
-	/*
-	   UPDATE rfid
-	   SET url = 'https://olm-build-artifacts.sfo2.cdn.digitaloceanspaces.com/track.mp3',
-	   playlistname = 'remotePlaylist'
-	   WHERE uniqueid = 'Nalini'
-	*/
-	api.Get("/currentstats/", func(ctx iris.Context) {
-		trackName, err := GetCurrentTrackName()
-		if err != nil {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Failed to get current track name",
-				"data":        err.Error(),
-			})
-			return
-		}
-		elapsedTime, err := GetCurrentTrackTime()
-		if err != nil {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Failed to get current track time",
-				"data":        err.Error(),
-			})
-			return
-		}
-		volume, err := GetCurrentVolume()
-		if err != nil {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Failed to get current volume",
-				"data":        err.Error(),
-			})
-			return
-		}
-		ctx.JSON(iris.Map{
-			"status_code": 200,
-			"message":     "Current track stats",
-			"data": iris.Map{
-				"track_name":   trackName,
-				"elapsed_time": elapsedTime,
-				"volume":       volume,
-			},
-		})
-	})
-
-	api.Get("/stopcurrentplaylist/", func(ctx iris.Context) {
-
-		// Stop the playlist and check for errors
-		err := StopPlaylist()
-		if err != nil {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Failed to stop playlist",
-				"data":        err.Error(),
-			})
-			return
-		}
-
-		// Get the current play state
-		currentPlayState, err := GetCurrentPlayState()
-		if err != nil {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Failed to get current play state",
-				"data":        err.Error(),
-			})
-			return
-		}
-
-		// Return the current play state to the client
-		ctx.StatusCode(200)
-		ctx.JSON(iris.Map{
-			"status_code": 200,
-			"message":     "Current play state",
-			"data":        currentPlayState,
-		})
-	})
-
-	api.Get("/playlistelapsedtime/", func(ctx iris.Context) {
-		currentTrackTime, err := GetCurrentTrackTime()
-		if err != nil {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Failed to get current track time",
-				"data":        err.Error(),
-			})
-			return
-		}
-		if currentTrackTime == "" {
-			ctx.StatusCode(500)
-			ctx.JSON(iris.Map{
-				"status_code": 500,
-				"message":     "Current track time is empty or nil",
-				"data":        nil,
-			})
-			return
-		}
-		ctx.StatusCode(200)
-		ctx.JSON(iris.Map{
-			"status_code": 200,
-			"message":     "Current track time",
-			"data":        currentTrackTime,
-		})
-	})
-
-	api.Post("/rfid/", tollboothic.LimitHandler(limiter), func(ctx iris.Context) {
-
-		rfid := new(RFID)
-
-		err := ctx.ReadJSON(&rfid)
-
-		if err != nil {
-			if err.Error() == "unexpected end of JSON input" {
-				ctx.StatusCode(400)
-				ctx.JSON(iris.Map{
-					"status_code": 400,
-					"message":     "Malformed JSON input.",
-				})
-			} else if err.Error() == "invalid character '\"' after object key:value pair" {
-				ctx.StatusCode(400)
-				ctx.JSON(iris.Map{
-					"status_code": 400,
-					"message":     "Missing comma after object key:value pair in JSON input.",
-				})
-			}
-		} else {
-
-			if rfid.TagID == "" {
-				// The TagID parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				ctx.StatusCode(422)
-
-				ctx.JSON(iris.Map{
-					"status_code": 422,
-					"message":     "The TagID value was empty.",
-				})
-
-			} else if rfid.UniqueID == "" {
-				// The UniqueID parameter in the JSON input is empty. Return a 422 error with appropriate message.
-
-				ctx.StatusCode(422)
-
-				ctx.JSON(iris.Map{
-					"status_code": 422,
-					"message":     "The UniqueID value was empty.",
-				})
-
-			} else {
-
-				var id int = 0
-				var tagid string = ""
-				var uniqueid string = ""
-				var url string = ""
-				var playlistname string = ""
-
-				sql := "SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '" + rfid.TagID + "' AND uniqueid = '" + rfid.UniqueID + "';"
-
-				rows, _ := database.Query(sql)
-
-				for rows.Next() {
-
-					rows.Scan(&id, &tagid, &uniqueid, &url, &playlistname)
-
-					fmt.Println(strconv.Itoa(id) + ": " + tagid + " " + uniqueid + " " + url + " " + playlistname)
-				}
-
-				if tagid != "" {
-					playAknowledgeNotification()
-					rfid.ID = id
-					rfid.TagID = tagid
-					rfid.UniqueID = uniqueid
-					rfid.URL = url
-					rfid.PlaylistName = playlistname
-
-					b, err := json.Marshal(rfid)
-
-					if err != nil {
-						fmt.Println(err)
-						return
-					}
-
-					data := string(b)
-
-					ctx.JSON(iris.Map{
-						"status_code": 200,
-						"message":     "INFO: The RFID tag exists. Playlist queued!",
-						"data":        data,
-					})
-					ClearPlaylist()
-					CreatePlaylist(rfid.URL, rfid.PlaylistName, ctx)
-					LoadPlaylist(rfid.PlaylistName)
-					PlayPlaylist(rfid.PlaylistName)
-
-				} else {
-
-					data := ""
-
-					ctx.JSON(iris.Map{
-						"status_code": 400,
-						"message":     "The RFID tag was not found in the DB.",
-						"data":        data,
-					})
-				}
-			}
-		}
-	})
-
-	// Create an api endpoint to create a new RFID tag.
-	api.Post("/rfid/create/", tollboothic.LimitHandler(limiter), func(ctx iris.Context) {
-
-		rfid := new(RFID)
-
-		err := ctx.ReadJSON(&rfid)
-
-		if err != nil {
-
-			if err.Error() == "unexpected end of JSON input" {
-				ctx.StatusCode(400)
-				ctx.JSON(iris.Map{
-					"status_code": 400,
-					"message":     "Malformed JSON input.",
-				})
-			} else if err.Error() == "invalid character '\"' after object key:value pair" {
-				ctx.StatusCode(400)
-				ctx.JSON(iris.Map{
-					"status_code": 400,
-					"message":     "Missing comma after object key:value pair in JSON input.",
-				})
-			}
-
-		} else {
-
-			if rfid.TagID == "" {
-				// The TagID parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				ctx.StatusCode(422)
-
-				ctx.JSON(iris.Map{
-					"status_code": 422,
-					"message":     "The TagID value was empty.",
-				})
-
-			} else if rfid.UniqueID == "" {
-				// The UniqueID parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				ctx.StatusCode(422)
-
-				ctx.JSON(iris.Map{
-					"status_code": 422,
-					"message":     "The UniqueID value was empty.",
-				})
-
-			} else if rfid.URL == "" {
-				// The URL parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				ctx.StatusCode(422)
-
-				ctx.JSON(iris.Map{
-					"status_code": 422,
-					"message":     "The URL value was empty.",
-				})
-
-			} else if rfid.PlaylistName == "" {
-				// The PlaylistName parameter in the JSON input is empty. Return a 422 error with appropriate message.
-				ctx.StatusCode(422)
-
-				ctx.JSON(iris.Map{
-					"status_code": 422,
-					"message":     "The PlaylistName value was empty.",
-				})
-
-			} else {
-
-				// Create the RFID tag in the database.
-				// If the RFID tag already exists in the database, return a 400 error with appropriate message.
-				// If the RFID tag does not exist in the database, create the RFID tag in the database.
-				// Return a 200 status code with appropriate message.
-
-				var id int = 0
-				var tagid string = ""
-				var uniqueid string = ""
-				var url string = ""
-				var playlistname string = ""
-
-				sql := "SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '" + rfid.TagID + "' AND uniqueid = '" + rfid.UniqueID + "';"
-
-				rows := database.QueryRow(sql)
-
-				err := rows.Scan(&id, &tagid, &uniqueid, &url, &playlistname)
-
-				if err != nil {
-
-					ctx.StatusCode(400)
-
-					ctx.JSON(iris.Map{
-						"status_code": 400,
-						"message":     "Something went wrong with the database query. Please try again.",
-					})
-
-				} else {
-
-					if tagid != "" {
-						ctx.StatusCode(400)
-
-						ctx.JSON(iris.Map{
-							"status_code": 400,
-							"message":     "The RFID tag already exists in the database.",
-						})
-					} else {
-						sql := "INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES ('" + rfid.TagID + "', '" + rfid.UniqueID + "', '" + rfid.URL + "', '" + rfid.PlaylistName + "');"
-
-						_, err := database.Exec(sql)
-
-						if err != nil {
-
-							ctx.StatusCode(400)
-
-							ctx.JSON(iris.Map{
-								"status_code": 400,
-								"message":     "Something went wrong with the database query. Please try again.",
-							})
-						} else {
-							ctx.StatusCode(200)
-
-							ctx.JSON(iris.Map{
-								"status_code": 200,
-								"message":     "The RFID tag was successfully created in the database.",
-							})
-						}
-					}
-				}
-			}
-		}
-	})
 	return api
+}
+
+func createDatabaseTable(database *sql.DB) {
+	statement, _ := database.Prepare("CREATE TABLE IF NOT EXISTS rfid (id INTEGER PRIMARY KEY AUTOINCREMENT, tagid TEXT, uniqueid TEXT, url TEXT, playlistname TEXT)")
+	statement.Exec()
+}
+
+func currentStatsHandler(ctx iris.Context) {
+	handleStatsEndpoint(ctx, getCurrentTrackNameWrapper, "track_name", "Failed to get current track name")
+	handleStatsEndpoint(ctx, getCurrentTrackTimeWrapper, "elapsed_time", "Failed to get current track time")
+	handleStatsEndpoint(ctx, getCurrentVolumeWrapper, "volume", "Failed to get current volume")
+}
+
+func getCurrentTrackNameWrapper() (interface{}, error) {
+	return GetCurrentTrackName()
+}
+
+func getCurrentVolumeWrapper() (interface{}, error) {
+	return GetCurrentVolume()
+}
+
+func stopCurrentPlaylistHandler(ctx iris.Context) {
+	stopPlaylistWrapper := func() (interface{}, error) {
+		err := StopPlaylist()
+		return nil, err
+	}
+	getCurrentPlayStateWrapper := func() (interface{}, error) {
+		state, err := GetCurrentPlayState()
+		return state, err
+	}
+
+	handleActionEndpoint(ctx, stopPlaylistWrapper, "Failed to stop playlist")
+	handleStatsEndpoint(ctx, getCurrentPlayStateWrapper, "play_state", "Failed to get current play state")
+}
+
+func playlistElapsedTimeHandler(ctx iris.Context) {
+	handleStatsEndpoint(ctx, getCurrentTrackTimeWrapper, "elapsed_time", "Failed to get current track time")
+}
+
+func getCurrentTrackTimeWrapper() (interface{}, error) {
+	return GetCurrentTrackTime()
+}
+
+func rfidHandler(database *sql.DB) iris.Handler {
+	return func(ctx iris.Context) {
+		rfid := new(RFID)
+		err := ctx.ReadJSON(&rfid)
+		handleInputErrors(ctx, err, rfid)
+		handleRFIDTag(ctx, database, rfid, false)
+	}
+}
+
+func rfidCreateHandler(database *sql.DB) iris.Handler {
+	return func(ctx iris.Context) {
+		rfid := new(RFID)
+		err := ctx.ReadJSON(&rfid)
+		handleInputErrors(ctx, err, rfid)
+		handleRFIDCreation(ctx, database, rfid)
+	}
+}
+
+func handleStatsEndpoint(ctx iris.Context, getStats func() (interface{}, error), statKey, errMsg string) {
+	stats, err := getStats()
+	if err != nil {
+		ctx.StatusCode(500)
+		ctx.JSON(iris.Map{
+			"status_code": 500,
+			"message":     errMsg,
+			"data":        err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(iris.Map{
+		"status_code": 200,
+		"message":     statKey,
+		"data":        stats,
+	})
+}
+
+func handleActionEndpoint(ctx iris.Context, actionFunc func() (interface{}, error), successMessage string) {
+	result, err := actionFunc()
+	if err != nil {
+		ctx.StatusCode(500)
+		ctx.JSON(iris.Map{
+			"status_code": 500,
+			"message":     fmt.Sprintf("Failed to %s", successMessage),
+			"data":        err.Error(),
+		})
+		return
+	}
+	ctx.JSON(iris.Map{
+		"status_code": 200,
+		"message":     successMessage,
+		"data":        result,
+	})
+}
+
+func handleInputErrors(ctx iris.Context, err error, rfid *RFID) bool {
+	if err != nil {
+		if err.Error() == "unexpected end of JSON input" {
+			ctx.StatusCode(400)
+			ctx.JSON(iris.Map{
+				"status_code": 400,
+				"message":     "Malformed JSON input.",
+			})
+		} else if err.Error() == "invalid character '\"' after object key:value pair" {
+			ctx.StatusCode(400)
+			ctx.JSON(iris.Map{
+				"status_code": 400,
+				"message":     "Missing comma after object key:value pair in JSON input.",
+			})
+		}
+		return true
+	}
+
+	if rfid.TagID == "" || rfid.UniqueID == "" || rfid.URL == "" || rfid.PlaylistName == "" {
+		ctx.StatusCode(422)
+		missingField := ""
+		if rfid.TagID == "" {
+			missingField = "TagID"
+		} else if rfid.UniqueID == "" {
+			missingField = "UniqueID"
+		} else if rfid.URL == "" {
+			missingField = "URL"
+		} else if rfid.PlaylistName == "" {
+			missingField = "PlaylistName"
+		}
+		ctx.JSON(iris.Map{
+			"status_code": 422,
+			"message":     fmt.Sprintf("The %s value was empty.", missingField),
+		})
+		return true
+	}
+
+	return false
+}
+
+func handleRFIDTag(ctx iris.Context, database *sql.DB, rfid *RFID, existingTag bool) {
+	var id int
+	var tagid, uniqueid, url, playlistname string
+
+	sqlQuery := fmt.Sprintf("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '%s' AND uniqueid = '%s';", rfid.TagID, rfid.UniqueID)
+	rows, _ := database.Query(sqlQuery)
+
+	for rows.Next() {
+		rows.Scan(&id, &tagid, &uniqueid, &url, &playlistname)
+		fmt.Println(strconv.Itoa(id) + ": " + tagid + " " + uniqueid + " " + url + " " + playlistname)
+	}
+
+	if tagid != "" && existingTag {
+		playAknowledgeNotification()
+		rfid.ID = id
+		rfid.TagID = tagid
+		rfid.UniqueID = uniqueid
+		rfid.URL = url
+		rfid.PlaylistName = playlistname
+
+		data, _ := json.Marshal(rfid)
+
+		ctx.JSON(iris.Map{
+			"status_code": 200,
+			"message":     "INFO: The RFID tag exists. Playlist queued!",
+			"data":        string(data),
+		})
+		ClearPlaylist()
+		CreatePlaylist(rfid.URL, rfid.PlaylistName, ctx)
+		LoadPlaylist(rfid.PlaylistName)
+		PlayPlaylist(rfid.PlaylistName)
+	} else if tagid == "" && !existingTag {
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "The RFID tag was not found in the DB.",
+			"data":        "",
+		})
+	}
+}
+
+func handleRFIDCreation(ctx iris.Context, database *sql.DB, rfid *RFID) {
+	var id int
+	var tagid, uniqueid, url, playlistname string
+
+	sqlQuery := fmt.Sprintf("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '%s' AND uniqueid = '%s';", rfid.TagID, rfid.UniqueID)
+	err := database.QueryRow(sqlQuery).Scan(&id, &tagid, &uniqueid, &url, &playlistname)
+
+	if err == nil && tagid != "" {
+		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "The RFID tag already exists in the database.",
+		})
+	} else {
+		sqlInsert := fmt.Sprintf("INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES ('%s', '%s', '%s', '%s');", rfid.TagID, rfid.UniqueID, rfid.URL, rfid.PlaylistName)
+		_, err := database.Exec(sqlInsert)
+
+		if err != nil {
+			ctx.StatusCode(400)
+			ctx.JSON(iris.Map{
+				"status_code": 400,
+				"message":     "Something went wrong with the database query. Please try again.",
+			})
+		} else {
+			ctx.StatusCode(200)
+			ctx.JSON(iris.Map{
+				"status_code": 200,
+				"message":     "The RFID tag was successfully created in the database.",
+			})
+		}
+	}
 }
 
 // dbConn() (db *sql.DB) initializes a single connection to the database.

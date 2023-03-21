@@ -2,10 +2,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -15,11 +17,13 @@ import (
 	"strconv"
 	"strings"
 
+	tts "cloud.google.com/go/texttospeech/apiv1"
 	"github.com/adrg/xdg"
 	"github.com/didip/tollbooth/v6"
 	"github.com/iris-contrib/middleware/tollboothic"
 	"github.com/kataras/iris/v12"
 	_ "github.com/mattn/go-sqlite3"
+	ttspb "google.golang.org/genproto/googleapis/cloud/texttospeech/v1"
 )
 
 type RFID struct {
@@ -263,6 +267,7 @@ func handleRFIDTag(ctx iris.Context, database *sql.DB, rfid *RFID, existingTag b
 	}
 }
 
+// TODO: Add transaction rollback functionality
 func handleRFIDCreation(ctx iris.Context, database *sql.DB, rfid *RFID) {
 	var id int
 	var tagid, uniqueid, url, playlistname string
@@ -296,32 +301,54 @@ func handleRFIDCreation(ctx iris.Context, database *sql.DB, rfid *RFID) {
 	}
 }
 
-// dbConn() (db *sql.DB) initializes a single connection to the database.
-func connectToDatabase() (database *sql.DB) {
-
-	database, err := sql.Open("sqlite3", "./rfids.db")
-
+// connectToDatabase initializes a single connection to the database.
+func connectToDatabase() (database *sql.DB, err error) {
+	// Open the SQLite database file
+	database, err = sql.Open("sqlite3", "./rfids.db")
 	if err != nil {
-		panic(err.Error())
+		return nil, fmt.Errorf("unable to open SQLite database: %w", err)
 	}
 
-	return database
+	// Ping the database to check the connection
+	err = database.Ping()
+	if err != nil {
+		// Close the database before returning an error, since we opened it successfully
+		database.Close()
+		return nil, fmt.Errorf("unable to establish a connection to the SQLite database: %w", err)
+	}
+
+	return database, nil
 }
 
+// createLogFile creates a log file at the specified path and sets the logger output to it.
+// The function ensures that the directory structure is created and returns an error if anything fails.
 func createLogFile(logFilePath string) error {
+	if logFilePath == "" {
+		return fmt.Errorf("log file path is empty")
+	}
+
 	// Create log directory
 	logDir := filepath.Dir(logFilePath)
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create log directory: %w", err)
+	}
+
+	// Check if the log file already exists
+	if _, err := os.Stat(logFilePath); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to check if log file exists: %w", err)
 	}
 
 	// Create log file
 	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create log file: %w", err)
 	}
 
-	defer logFile.Close()
+	defer func() {
+		if err := logFile.Close(); err != nil {
+			log.Printf("failed to close log file: %v", err)
+		}
+	}()
 
 	// Set logger output
 	log.SetOutput(logFile)
@@ -338,12 +365,16 @@ func getLogFilePath(logFileName string) string {
 
 // CreatePlaylist creates a new playlist in the database.
 func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
-	database := connectToDatabase()
+	database, err := connectToDatabase()
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %v", err)
+	}
+	defer database.Close()
 
 	// Check if the playlist already exists in the database.
 	var count int
 	sqlCheck := "SELECT COUNT(*) FROM playlist WHERE url = ? AND playlistname = ?"
-	err := database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
+	err = database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
 
 	if err != nil {
 		ctx.StatusCode(400)
@@ -386,14 +417,18 @@ func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 
 // DeletePlaylist deletes a playlist from the database.
 func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
-	database := connectToDatabase()
+	database, err := connectToDatabase()
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %v", err)
+	}
+	defer database.Close()
 
 	// Check if the playlist exists in the database.
 	var count int
 	sqlCheck := "SELECT COUNT(*) FROM playlist WHERE url = ? AND playlistname = ?"
-	err := database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
+	selectErr := database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
 
-	if err != nil {
+	if selectErr != nil {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
@@ -413,9 +448,9 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 
 	// Delete the playlist from the database.
 	sqlDelete := "DELETE FROM playlist WHERE url = ? AND playlistname = ?"
-	_, err = database.Exec(sqlDelete, url, playlistname)
+	_, deleteErr := database.Exec(sqlDelete, url, playlistname)
 
-	if err != nil {
+	if deleteErr != nil {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
@@ -444,15 +479,19 @@ func GetPlaylist(url, playlistname string) Playlist {
 
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
 
-	database := connectToDatabase()
+	database, err := connectToDatabase()
+	if err != nil {
+		log.Fatalf("Failed to connect to the database: %v", err)
+	}
+	defer database.Close()
 
 	row := database.QueryRow(sql, url, playlistname)
 
 	var playlist Playlist
 
-	err := row.Scan(&playlist.ID, &playlist.URLFromDB, &playlist.PlaylistNameDB)
-	if err != nil {
-		playlist.Err = fmt.Errorf("failed to retrieve playlist: %v", err)
+	errs := row.Scan(&playlist.ID, &playlist.URLFromDB, &playlist.PlaylistNameDB)
+	if errs != nil {
+		playlist.Err = fmt.Errorf("failed to retrieve playlist: %v", errs)
 	}
 
 	return playlist
@@ -475,49 +514,49 @@ func playSound(s Sound) {
 
 // playErrorNotification plays the error notification.
 func playErrorNotification() Sound {
-	s := Sound{File: "/etc/sound/subtleErrorBell.mp3"}
-	playSound(s)
-	return s
+	sound := Sound{File: "/etc/sound/subtleErrorBell.mp3"}
+	playSound(sound)
+	return sound
 }
 
 // playReadyNotification plays the ready notification.
 func playReadyNotification() Sound {
-	s := Sound{File: "/etc/sound/ready.mp3"}
-	playSound(s)
-	return s
+	sound := Sound{File: "/etc/sound/ready.mp3"}
+	playSound(sound)
+	return sound
 }
 
 // playAknowledgeNotification plays the aknowledge notification.
 func playAknowledgeNotification() Sound {
-	s := Sound{File: "/etc/sound/intuition.mp3"}
-	playSound(s)
-	return s
+	sound := Sound{File: "/etc/sound/intuition.mp3"}
+	playSound(sound)
+	return sound
 }
 
 // playShutdownNotification plays the shutdown notification.
 func playShutdownNotification() Sound {
-	s := Sound{File: "/etc/sound/shutdown.mp3"}
-	playSound(s)
-	return s
+	sound := Sound{File: "/etc/sound/shutdown.mp3"}
+	playSound(sound)
+	return sound
 }
 
 func playLowBatteryNotification(batteryLevel int) Sound {
-	s := generateBatteryMessage(batteryLevel)
-	playSound(s)
-	return s
+	sound := generateBatteryMessage(batteryLevel)
+	playSound(sound)
+	return sound
 }
 
 func generateBatteryMessage(batteryLevel int) Sound {
-	s := Sound{File: "batteryMessage.mp3"}
+	sound := Sound{File: "batteryMessage.mp3"}
 	cmd := "gtts-cli"
 	batteryLevelString := strconv.Itoa(batteryLevel)
 	message := "The battery is at " + batteryLevelString + " percent!"
-	args := []string{"-o", s.File, message}
+	args := []string{"-o", sound.File, message}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-		s.Err = fmt.Errorf("failed to generate battery message: %v", err)
-		log.Println(s.Err)
+		sound.Err = fmt.Errorf("failed to generate battery message: %v", err)
+		log.Println(sound.Err)
 	}
-	return s
+	return sound
 }
 
 /*
@@ -555,6 +594,53 @@ func playCustomMessage(message string) {
 		log.Println(fmt.Errorf("Failed to play 'Error' notification: %v", err))
 	}
 
+}
+
+// playCustomMessageFromGCloud uses the Google text to speech engine to play a custom message.
+func playCustomMessageFromGCloud(message string) {
+	// Set the environment variable to the path of your JSON key file
+	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "keyfile.json")
+
+	ctx := context.Background()
+
+	client, err := tts.NewClient(ctx)
+	if err != nil {
+		log.Printf("Failed to create texttospeech client: %v", err)
+		return
+	}
+	defer client.Close()
+
+	req := &ttspb.SynthesizeSpeechRequest{
+		Input: &ttspb.SynthesisInput{
+			InputSource: &ttspb.SynthesisInput_Text{Text: message},
+		},
+		Voice: &ttspb.VoiceSelectionParams{
+			LanguageCode: "en-US",
+			SsmlGender:   ttspb.SsmlVoiceGender_FEMALE,
+		},
+		AudioConfig: &ttspb.AudioConfig{
+			AudioEncoding: ttspb.AudioEncoding_MP3,
+		},
+	}
+
+	resp, err := client.SynthesizeSpeech(ctx, req)
+	if err != nil {
+		log.Printf("Failed to synthesize speech: %v", err)
+		return
+	}
+
+	err = ioutil.WriteFile("output.mp3", resp.AudioContent, 0644)
+	if err != nil {
+		log.Printf("Failed to write audio content: %v", err)
+		return
+	}
+
+	cmd := "mpg123"
+	args := []string{"output.mp3"}
+
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+		log.Printf("Failed to play custom message: %v", err)
+	}
 }
 
 func ClearPlaylist() error {

@@ -194,7 +194,7 @@ func newApp(debug bool) *iris.Application {
 				}
 
 				if tagid != "" {
-					playAknowledgeSound()
+					playAknowledgeNotification()
 					rfid.ID = id
 					rfid.TagID = tagid
 					rfid.UniqueID = uniqueid
@@ -456,61 +456,51 @@ func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 
 // DeletePlaylist deletes a playlist from the database.
 func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
-
-	// Delete the playlist from the database.
-	// If the playlist does not exist in the database, return a 400 error with appropriate message.
-	// If the playlist exists in the database, delete the playlist from the database.
-	// Return a 200 status code with appropriate message.
-
-	var id int = 0
-
-	sqlSelect := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
-
 	database := dbConn()
+	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
+	row := database.QueryRow(sql, url, playlistname)
 
-	rows := database.QueryRow(sqlSelect)
+	var id int
+	var urlFromDB string
+	var playlistNameFromDB string
 
-	err := rows.Scan(&id, &url, &playlistname)
+	err := row.Scan(&id, &urlFromDB, &playlistNameFromDB)
 
 	if err != nil {
-
 		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "The playlist does not exist in the database.",
+		})
+		return
+	}
 
+	sqlDelete := "DELETE FROM playlist WHERE url = ? AND playlistname = ?;"
+	statement, err := database.Prepare(sqlDelete)
+	if err != nil {
+		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
 			"message":     "Something went wrong with the database query. Please try again.",
 		})
-
-	} else {
-
-		if url != "" {
-
-			statement, err := database.Prepare("DELETE FROM playlist WHERE url =? AND playlistname =?")
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			_, err = statement.Exec(url, playlistname)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-		} else {
-
-			ctx.StatusCode(400)
-
-			ctx.JSON(iris.Map{
-				"status_code": 400,
-				"message":     "The playlist does not exist in the database.",
-			})
-
-		}
-
+		return
 	}
 
+	_, err = statement.Exec(url, playlistname)
+	if err != nil {
+		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "Something went wrong with the database query. Please try again.",
+		})
+		return
+	}
+
+	ctx.StatusCode(200)
+	ctx.JSON(iris.Map{
+		"status_code": 200,
+		"message":     "The playlist was deleted successfully.",
+	})
 }
 
 // GetPlaylist gets a playlist from the database.
@@ -667,12 +657,12 @@ func ClearPlaylist() {
 
 		log.Println(os.Stderr, err)
 
-		playErrorSound()
+		playErrorNotification()
 		playCustomMessage("The playlist could not be cleared. Please try again.")
 
 	} else {
 
-		playAknowledgeSound()
+		playAknowledgeNotification()
 		playCustomMessage("The playlist has been cleared.")
 
 	}
@@ -701,12 +691,12 @@ func LoadPlaylist(playlist string) {
 
 		log.Println(os.Stderr, err)
 
-		playErrorSound()
+		playErrorNotification()
 		playCustomMessage("The playlist could not be loaded. Please try again.")
 
 	} else {
 
-		playAknowledgeSound()
+		playAknowledgeNotification()
 		playCustomMessage("The playlist has been loaded.")
 	}
 
@@ -722,7 +712,7 @@ func PlayPlaylist(playlist string) {
 
 		log.Println(os.Stderr, err)
 
-		playErrorSound()
+		playErrorNotification()
 		playCustomMessage("The playlist could not be played. Please try again.")
 
 	} else {
@@ -742,13 +732,13 @@ func PausePlaylist(playlist string) {
 	if err := exec.Command(cmd, args...).Run(); err != nil {
 
 		log.Println(os.Stderr, err)
-		playErrorSound()
+		playErrorNotification()
 		playCustomMessage("The playlist could not be paused. Please try again.")
 
 	} else {
 
 		log.Println("Pausing playlist: ", playlist)
-		playAknowledgeSound()
+		playAknowledgeNotification()
 		playCustomMessage("The playlist has been paused.")
 	}
 
@@ -763,13 +753,13 @@ func StopPlaylist() {
 	if err := exec.Command(cmd, args...).Run(); err != nil {
 
 		log.Println(os.Stderr, err)
-		playErrorSound()
+		playErrorNotification()
 		playCustomMessage("The playlist could not be stopped. Please try again.")
 
 	} else {
 
 		log.Println("Stopping playlist")
-		playAknowledgeSound()
+		playAknowledgeNotification()
 		playCustomMessage("The playlist has been stopped.")
 
 	}
@@ -796,7 +786,7 @@ func GetCurrentTrackName() (currentTrackName string) {
 		log.Println(os.Stderr, err)
 		currentTrackName = "ERROR"
 
-		playErrorSound()
+		playErrorNotification()
 		playCustomMessage("The current track could not be retrieved. Please try again.")
 
 	} else {

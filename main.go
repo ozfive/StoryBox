@@ -466,7 +466,7 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "Something went wrong with the database query. Please try again.",
+			"message":     "Failed to SELECT playlist " + playlistname + " from the database. Please try again.",
 		})
 		return
 	}
@@ -475,7 +475,7 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "The playlist does not exist in the database.",
+			"message":     "The playlist " + playlistname + " does not exist in the database.",
 		})
 		return
 	}
@@ -488,7 +488,7 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "Failed to delete playlist from the database. Please try again.",
+			"message":     "Failed to delete playlist " + playlistname + " from the database. Please try again.",
 		})
 		return
 	}

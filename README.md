@@ -2,7 +2,7 @@
 
 StoryBox is Raspberry Pi-based device that uses an RFID reader to play audio stories, songs, and playlists for children.
 
-#### Summary
+## Summary
 
 This repository contains the complete source code for StoryBox, a hardware project built around a Raspberry Pi that aims to provide children with a unique listening experience without screens. StoryBox features an RFID reader to identify story, song, album, and playlist cards, and integrated speakers to play the corresponding audio files.
 

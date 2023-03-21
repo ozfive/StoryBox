@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -98,39 +99,108 @@ func newApp(debug bool) *iris.Application {
 	   WHERE uniqueid = 'Nalini'
 	*/
 	api.Get("/currentstats/", func(ctx iris.Context) {
-
-		trackName := GetCurrentTrackName()
-
+		trackName, err := GetCurrentTrackName()
+		if err != nil {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to get current track name",
+				"data":        err.Error(),
+			})
+			return
+		}
+		elapsedTime, err := GetCurrentTrackTime()
+		if err != nil {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to get current track time",
+				"data":        err.Error(),
+			})
+			return
+		}
+		volume, err := GetCurrentVolume()
+		if err != nil {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to get current volume",
+				"data":        err.Error(),
+			})
+			return
+		}
 		ctx.JSON(iris.Map{
 			"status_code": 200,
-			"message":     "Current track name",
-			"data":        trackName,
+			"message":     "Current track stats",
+			"data": iris.Map{
+				"track_name":   trackName,
+				"elapsed_time": elapsedTime,
+				"volume":       volume,
+			},
 		})
-
 	})
 
 	api.Get("/stopcurrentplaylist/", func(ctx iris.Context) {
 
-		StopPlaylist()
-		currentPlayState := GetCurrentPlayState()
+		// Stop the playlist and check for errors
+		err := StopPlaylist()
+		if err != nil {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to stop playlist",
+				"data":        err.Error(),
+			})
+			return
+		}
+
+		// Get the current play state
+		currentPlayState, err := GetCurrentPlayState()
+		if err != nil {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to get current play state",
+				"data":        err.Error(),
+			})
+			return
+		}
+
+		// Return the current play state to the client
+		ctx.StatusCode(200)
 		ctx.JSON(iris.Map{
 			"status_code": 200,
 			"message":     "Current play state",
 			"data":        currentPlayState,
 		})
-
 	})
 
 	api.Get("/playlistelapsedtime/", func(ctx iris.Context) {
-
-		currentTrackTime := GetCurrentTrackTime()
-
+		currentTrackTime, err := GetCurrentTrackTime()
+		if err != nil {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to get current track time",
+				"data":        err.Error(),
+			})
+			return
+		}
+		if currentTrackTime == "" {
+			ctx.StatusCode(500)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Current track time is empty or nil",
+				"data":        nil,
+			})
+			return
+		}
+		ctx.StatusCode(200)
 		ctx.JSON(iris.Map{
 			"status_code": 200,
 			"message":     "Current track time",
 			"data":        currentTrackTime,
 		})
-
 	})
 
 	api.Post("/rfid/", tollboothic.LimitHandler(limiter), func(ctx iris.Context) {
@@ -229,13 +299,9 @@ func newApp(debug bool) *iris.Application {
 						"message":     "The RFID tag was not found in the DB.",
 						"data":        data,
 					})
-
 				}
-
 			}
-
 		}
-
 	})
 
 	// Create an api endpoint to create a new RFID tag.
@@ -590,28 +656,19 @@ func generateBatteryMessage(batteryLevel int) Sound {
 }
 
 /*
-func CreatePlaylist(track string, playlist string) {
-
+func CreatePlaylist(track string, playlist string) error {
 	playlistFile := "/var/lib/mpd/playlists/" + playlist + ".m3u"
-
 	f, err := os.Create(playlistFile)
 	if err != nil {
-		log.Println(err)
-		return
+		return fmt.Errorf("failed to create playlist file: %v", err)
 	}
-	l, err := f.WriteString(track)
-	if err != nil {
-		log.Println(err)
-		f.Close()
-		return
-	}
-	log.Println(l, "bytes written successfully")
-	err = f.Close()
-	if err != nil {
-		log.Println(err)
-		return
+	defer f.Close()
+
+	if _, err := f.WriteString(track); err != nil {
+		return fmt.Errorf("failed to write track to playlist file: %v", err)
 	}
 
+	return nil
 }
 */
 
@@ -620,8 +677,10 @@ sudo pip install gTTS
 CLI: gtts-cli "come for dinner" | mpg123 -
 */
 
-// Use the Google text to speech engine library at this location https://github.com/pndurette/gTTS to play a custom message.
-// The function should take a string as an argument and play the string as a message.
+// Use the Google text to speech engine library at this location
+// https://github.com/pndurette/gTTS to play a custom message.
+// The function should take a string as an argument and play
+// the string as a message.
 func playCustomMessage(message string) {
 
 	cmd := "gtts-cli"
@@ -641,16 +700,22 @@ func ClearPlaylist() error {
 		mpcHostArg = "--host"
 		mpcHost    = "alraune22@localhost"
 	)
+
 	clearArgs := []string{mpcHostArg, mpcHost, mpcClear}
+
 	if err := exec.Command(mpcCmd, clearArgs...).Run(); err != nil {
-		playErrorNotification()
+		sound := playErrorNotification()
+		fmt.Println(sound)
 		playCustomMessage("The playlist could not be cleared. Please try again.")
 		return fmt.Errorf("failed to clear playlist: %v", err)
 	}
+
 	playAknowledgeNotification()
+
 	playCustomMessage("The playlist has been cleared.")
 
 	updateArgs := []string{mpcHostArg, mpcHost, mpcUpdate}
+
 	if err := exec.Command(mpcCmd, updateArgs...).Run(); err != nil {
 		log.Println(fmt.Errorf("Failed to update the music database: %v", err))
 	}
@@ -681,85 +746,79 @@ func LoadPlaylist(playlist string) error {
 	return nil
 }
 
-func PlayPlaylist(playlist string) {
-
+// PlayPlaylist clears the current playlist, loads the specified playlist, and starts playing it.
+// Returns an error if there is an issue with clearing, loading, or playing the playlist.
+func PlayPlaylist(playlist string) error {
+	// Clear the current playlist.
 	cmd := "mpc"
-
-	args := []string{"--host", "alraune22@localhost", "play"}
-
+	args := []string{"--host", "alraune22@localhost", "clear"}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(fmt.Errorf("Failed to play Playlist: %v", err))
-
-		playErrorNotification()
-		playCustomMessage("The playlist could not be played. Please try again.")
-
-	} else {
-
-		log.Println("Playing playlist: ", playlist)
-
+		return fmt.Errorf("Failed to clear playlist %s: %v", playlist, err)
 	}
 
+	// Load the specified playlist
+	args = []string{"--host", "alraune22@localhost", "load", playlist}
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+		return fmt.Errorf("Failed to load playlist %s: %v", playlist, err)
+	}
+
+	// Start playing the playlist
+	args = []string{"--host", "alraune22@localhost", "play"}
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+		return fmt.Errorf("Failed to play playlist %s: %v", playlist, err)
+	}
+
+	log.Println("Playing playlist: ", playlist)
+	return nil
 }
 
-func PausePlaylist(playlist string) {
-
+// PausePlaylist pauses the specified playlist.
+func PausePlaylist(playlist string) error {
+	// Define the command and arguments to be executed
 	cmd := "mpc"
-
 	args := []string{"--host", "alraune22@localhost", "pause"}
 
+	// Execute the command and check for errors
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-		playErrorNotification()
-		playCustomMessage("The playlist could not be paused. Please try again.")
-
-	} else {
-
-		log.Println("Pausing playlist: ", playlist)
-		playAknowledgeNotification()
-		playCustomMessage("The playlist has been paused.")
+		return fmt.Errorf("Failed to pause playlist: %v", err)
 	}
 
+	// Log the success and play the acknowledgement notification
+	log.Println("Pausing playlist: ", playlist)
+	playAknowledgeNotification()
+	playCustomMessage("The playlist has been paused.")
+
+	return nil
 }
 
-func StopPlaylist() {
-
+// StopPlaylist stops the current playlist.
+func StopPlaylist() error {
 	cmd := "mpc"
-
 	args := []string{"--host", "alraune22@localhost", "stop"}
 
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-		playErrorNotification()
-		playCustomMessage("The playlist could not be stopped. Please try again.")
-
-	} else {
-
-		log.Println("Stopping playlist")
-		playAknowledgeNotification()
-		playCustomMessage("The playlist has been stopped.")
-
+		return fmt.Errorf("failed to stop playlist: %v", err)
 	}
 
+	log.Println("Stopping playlist")
+	playAknowledgeNotification()
+	playCustomMessage("The playlist has been stopped.")
+
+	return nil
 }
 
-func GetCurrentTrackName() string {
-	cmdGetCurrentTrackName := "/usr/local/bin/mpdcurrentsong"
-	out, err := exec.Command(cmdGetCurrentTrackName).Output()
+func GetCurrentTrackName() (string, error) {
+	cmd := "/usr/local/bin/mpdcurrentsong"
+	out, err := exec.Command(cmd).Output()
 	if err != nil {
 		log.Println(err)
-		playErrorNotification()
-		playCustomMessage("The current track could not be retrieved. Please try again.")
-		return "ERROR"
+		return "", err
 	}
 	currentTrackName := strings.TrimSpace(string(out))
-	return currentTrackName
+	return currentTrackName, nil
 }
 
-func GetCurrentPlayState() (currentPlayState string) {
-
+func GetCurrentPlayState() (string, error) {
 	cmdPlayState := "/usr/local/bin/mpdplaystate"
 
 	execCmd := exec.Command(cmdPlayState)
@@ -770,44 +829,65 @@ func GetCurrentPlayState() (currentPlayState string) {
 	execCmd.Stdout = &out
 	execCmd.Stderr = &stderr
 
-	err := execCmd.Run()
-
-	if err != nil {
-		log.Println(os.Stderr, err)
-		currentPlayState = "ERROR"
-	} else {
-		// 0 = State unknown, 1 = STATE STOP, 2 = STATE PLAY, 3 = STATE PAUSE,
-		currentPlayState = strings.Trim(out.String(), "\n")
-
+	if err := execCmd.Run(); err != nil {
+		log.Println(err)
+		return "", fmt.Errorf("failed to get current play state: %v", err)
 	}
 
-	return currentPlayState
+	currentPlayState := strings.TrimSpace(out.String())
+	return currentPlayState, nil
 }
 
-func GetCurrentTrackTime() (elapsedTime string) {
+// GetCurrentTrackTime returns the current elapsed time of the track being played by the MPD server.
+// It runs the `mpdtime` command and returns the elapsed time as a string.
+// If there is an error with the command, it returns an empty string and an error message.
+func GetCurrentTrackTime() (string, error) {
+	cmd := "/usr/local/bin/mpdtime"
 
-	cmdGetCurrentTrack := "/usr/local/bin/mpdtime"
-
-	execCmd := exec.Command(cmdGetCurrentTrack)
+	execCmd := exec.Command(cmd)
 
 	var out bytes.Buffer
 	var stderr bytes.Buffer
 
+	// Set the output stream to the `out` buffer and the error stream to the `stderr` buffer.
 	execCmd.Stdout = &out
 	execCmd.Stderr = &stderr
 
+	// Run the command and check for errors.
 	err := execCmd.Run()
-
 	if err != nil {
-		log.Println(os.Stderr, err)
-		elapsedTime = "ERROR"
-	} else {
-
-		elapsedTime = strings.Trim(out.String(), "\n")
-
+		log.Println(err)
+		return "", fmt.Errorf("Failed to get current track time: %v", err)
 	}
 
-	return elapsedTime
+	// Trim the newline character from the output and return the elapsed time as a string.
+	elapsedTime := strings.Trim(out.String(), "\n")
+	return elapsedTime, nil
+}
+
+func GetCurrentVolume() (int, error) {
+	cmd := "mpc"
+	args := []string{"--host", "alraune22@localhost", "volume"}
+
+	output, err := exec.Command(cmd, args...).Output()
+	if err != nil {
+		return 0, fmt.Errorf("Failed to get current volume: %v", err)
+	}
+
+	// The output of the "mpc volume" command is in the format "volume: N%", where N is the volume level.
+	// We extract the volume level using a regular expression.
+	re := regexp.MustCompile(`volume:\s+(\d+)%`)
+	match := re.FindStringSubmatch(string(output))
+	if len(match) < 2 {
+		return 0, errors.New("Failed to extract volume level from command output")
+	}
+
+	volume, err := strconv.Atoi(match[1])
+	if err != nil {
+		return 0, fmt.Errorf("Failed to convert volume to integer: %v", err)
+	}
+
+	return volume, nil
 }
 
 func runShutDownSequence() {

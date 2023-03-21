@@ -73,6 +73,7 @@ cd StoryBoxShellScripts || exit
 chmod +x phatbeat.sh
 ./phatbeat.sh
 
+# Run the install.sh script in the wittypi3mini repository.
 cd wittypi3mini || exit
 chmod +x install.sh
 ./install.sh
@@ -91,13 +92,13 @@ ninja -C output install
 # Build and move mpdcurrentsong, mpdplaystate, and mpdtime
 cd ~/StoryBox/lib/ || exit
 gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
-mv mpdcurrentsong ~/StoryBox/bin/
+mv mpdcurrentsong /usr/local/bin/mpdcurrentsong
 
 gcc -o mpdplaystate mpdplaystate.c -lmpdclient
-mv mpdplaystate ~/StoryBox/bin/
+mv mpdplaystate /usr/local/bin/mpdplaystate
 
 gcc -o mpdtime mpdtime.c -lmpdclient
-mv mpdtime ~/StoryBox/bin/
+mv mpdtime /usr/local/bin/mpdtime
 
 # Build and move StoryBox
 mkdir /home/pi/go/
@@ -110,7 +111,7 @@ cd /home/pi/go/src/Storybox/ || exit
 
 go build -o StoryBox
 
-mv StoryBox /home/pi/go/src/StoryBox/bin/
+mv StoryBox /usr/local/bin/Storybox
 
 # Build Startup application in the Startup directory
 cd /home/pi/go/src/Storybox/Startup || exit
@@ -120,10 +121,9 @@ chmod +x Startup
 # Copy the Startup application to the bin directory to make it available to the system
 cp Startup /usr/local/bin
 
-# Copy the storyboxstartup.service file to lib/systemd/system/
+# Copy storyboxstartup.service file to lib/systemd/system/
 cd /home/pi/go/src/Storybox/ || exit
-
-cp storyboxstartup.service /lib/systemd/system/
+cp storyboxstartup.service /lib/systemd/system/storyboxstartup.service
 
 # Copy the started.mp3 file to /etc/sound/
 cp /home/pi/go/src/Storybox/Startup/started.mp3 /etc/sound/started.mp3

@@ -366,7 +366,7 @@ func newApp(debug bool) *iris.Application {
 }
 
 // dbConn() (db *sql.DB) initializes a single connection to the database.
-func dbConn() (database *sql.DB) {
+func connectToDatabase() (database *sql.DB) {
 
 	database, err := sql.Open("sqlite3", "./rfids.db")
 
@@ -417,7 +417,7 @@ func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
 
-	database := dbConn()
+	database := connectToDatabase()
 
 	rows := database.QueryRow(sql)
 
@@ -456,7 +456,7 @@ func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 
 // DeletePlaylist deletes a playlist from the database.
 func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
-	database := dbConn()
+	database := connectToDatabase()
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
 	row := database.QueryRow(sql, url, playlistname)
 
@@ -505,7 +505,7 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 
 // GetPlaylist gets a playlist from the database.
 func GetPlaylist(url string, playlistname string, ctx iris.Context) {
-	database := dbConn()
+	database := connectToDatabase()
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
 	row := database.QueryRow(sql, url, playlistname)
 
@@ -770,7 +770,7 @@ func GetCurrentTrackName() (currentTrackName string) {
 
 	currentTrackName = ""
 
-	cmdGetCurrentTrackName := "bin/mpdcurrentsong"
+	cmdGetCurrentTrackName := "/usr/local/bin/mpdcurrentsong"
 
 	execCmd := exec.Command(cmdGetCurrentTrackName)
 
@@ -799,7 +799,7 @@ func GetCurrentTrackName() (currentTrackName string) {
 
 func GetCurrentPlayState() (currentPlayState string) {
 
-	cmdPlayState := "bin/mpdplaystate"
+	cmdPlayState := "/usr/local/bin/mpdplaystate"
 
 	execCmd := exec.Command(cmdPlayState)
 
@@ -825,7 +825,7 @@ func GetCurrentPlayState() (currentPlayState string) {
 
 func GetCurrentTrackTime() (elapsedTime string) {
 
-	cmdGetCurrentTrack := "bin/mpdtime"
+	cmdGetCurrentTrack := "/usr/local/bin/mpdtime"
 
 	execCmd := exec.Command(cmdGetCurrentTrack)
 

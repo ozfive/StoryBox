@@ -6,24 +6,19 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
-	"github.com/kataras/iris/v12"
-
-	// "github.com/kataras/iris/v12/middleware/basicauth"
-
-	"github.com/didip/tollbooth/v6"
-	"github.com/iris-contrib/middleware/tollboothic"
-
-	// "github.com/kataras/iris/middleware/basicauth"
-	_ "github.com/mattn/go-sqlite3"
-	// phatbeat "github.com/ozfive/phatbeat/lib"
 	"log"
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
-	// "time"
+
+	"github.com/adrg/xdg"
+	"github.com/didip/tollbooth/v6"
+	"github.com/iris-contrib/middleware/tollboothic"
+	"github.com/kataras/iris/v12"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type RFID struct {
@@ -35,7 +30,12 @@ type RFID struct {
 }
 
 func main() {
-	// playReadySound()
+
+	// Create and configure logger
+	err := createLogFile(getLogFilePath("system-errors.log"))
+	if err != nil {
+		log.Fatalf("Failed to create log file: %v", err)
+	}
 
 	debug := false
 
@@ -49,66 +49,10 @@ func main() {
 
 	api := newApp(debug)
 
-	err := api.Run(iris.Addr(localIPAddress+":"+localIPPort), iris.WithoutServerError(iris.ErrServerClosed), iris.WithOptimizations)
+	errs := api.Run(iris.Addr(localIPAddress+":"+localIPPort), iris.WithoutServerError(iris.ErrServerClosed), iris.WithOptimizations)
 	if err != nil {
-		log.Println(err.Error())
+		log.Println(errs.Error())
 	}
-
-	/*
-
-	   phatbeat.On(phatbeat.FastForward, true, func(p int) {
-	           log.Println("Fast Forward")
-	   })
-
-	   phatbeat.Hold(phatbeat.FastForward, false, 2, func(b int) {
-	           log.Println("FF Held")
-	   })
-
-	   phatbeat.On(phatbeat.PlayPause, false, func(b int) {
-	           log.Println("PP")
-	   })
-
-	   phatbeat.Hold(phatbeat.PlayPause, false, 2, func(b int) {
-	           log.Println("PP held")
-	   })
-
-	   phatbeat.On(phatbeat.VolDown, true, func(p int) {
-	           log.Println("VolDown")
-	   })
-
-	   phatbeat.Hold(phatbeat.VolDown, false, 2, func(b int) {
-	           log.Println("VolDown")
-	   })
-
-	   phatbeat.On(phatbeat.VolUp, true, func(p int) {
-	           log.Println("VolUp")
-	   })
-
-	   phatbeat.Hold(phatbeat.VolUp, false, 2, func(b int) {
-	           log.Println("VolUp")
-	   })
-
-	   phatbeat.On(phatbeat.Rewind, true, func(p int) {
-	           log.Println("Rewind")
-	   })
-
-	   phatbeat.Hold(phatbeat.Rewind, false, 2, func(b int) {
-	           log.Println("Rewind")
-	   })
-
-	   phatbeat.On(phatbeat.OnOff, true, func(p int) {
-	           log.Println("OnOff")
-	   })
-
-	   phatbeat.Hold(phatbeat.OnOff, false, 2, func(b int) {
-	           log.Println("OnOff")
-	   })
-
-	   defer phatbeat.Clean()
-
-	   select {}
-
-	*/
 }
 
 // basicAuthUser string, basicAuthPassword string
@@ -392,9 +336,7 @@ func newApp(debug bool) *iris.Application {
 							"status_code": 400,
 							"message":     "The RFID tag already exists in the database.",
 						})
-
 					} else {
-
 						sql := "INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES ('" + rfid.TagID + "', '" + rfid.UniqueID + "', '" + rfid.URL + "', '" + rfid.PlaylistName + "');"
 
 						_, err := database.Exec(sql)
@@ -407,27 +349,19 @@ func newApp(debug bool) *iris.Application {
 								"status_code": 400,
 								"message":     "Something went wrong with the database query. Please try again.",
 							})
-
 						} else {
-
 							ctx.StatusCode(200)
 
 							ctx.JSON(iris.Map{
 								"status_code": 200,
 								"message":     "The RFID tag was successfully created in the database.",
 							})
-
 						}
-
 					}
-
 				}
-
 			}
-
 		}
 	})
-
 	return api
 }
 
@@ -441,6 +375,34 @@ func dbConn() (database *sql.DB) {
 	}
 
 	return database
+}
+
+func createLogFile(logFilePath string) error {
+	// Create log directory
+	logDir := filepath.Dir(logFilePath)
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return err
+	}
+
+	// Create log file
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer logFile.Close()
+
+	// Set logger output
+	log.SetOutput(logFile)
+	return nil
+}
+
+func getLogFilePath(logFileName string) string {
+	// Get XDG_DATA_HOME directory
+	dataDir := xdg.DataHome
+
+	// Create log file path
+	return filepath.Join(dataDir, "storybox", "logs", logFileName)
 }
 
 // CreatePlaylist creates a new playlist in the database.
@@ -472,7 +434,6 @@ func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 	} else {
 
 		if url != "" {
-
 			sql := "INSERT INTO playlist (url, playlistname) VALUES ('" + url + "', '" + playlistname + "');"
 
 			_, err := database.Exec(sql)
@@ -483,18 +444,14 @@ func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
 			}
 
 		} else {
-
 			ctx.StatusCode(400)
 
 			ctx.JSON(iris.Map{
 				"status_code": 400,
 				"message":     "The playlist already exists in the database.",
 			})
-
 		}
-
 	}
-
 }
 
 // DeletePlaylist deletes a playlist from the database.
@@ -613,38 +570,34 @@ func GetPlaylist(url string, playlistname string, ctx iris.Context) {
 
 }
 
-// Create a function called playErrorSound() that plays the error sound.
-func playErrorSound() {
+// playErrorNotification plays the error notification.
+func playErrorNotification() {
 
 	cmd := "mpg123-alsa"
-
 	errorSoundFile := "/etc/sound/subtleErrorBell.mp3"
-
 	args := []string{errorSoundFile}
+
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+		log.Println(fmt.Errorf("Failed to play 'Error' notification: %v", err))
 	}
 
 }
 
-func playReadySound() {
+// playReadyNotification plays the ready notification.
+func playReadyNotification() {
 
 	cmd := "mpg123-alsa"
-
 	startupSoundFile := "/etc/sound/ready.mp3"
-
 	args := []string{startupSoundFile}
+
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+		log.Println(fmt.Errorf("Failed to play 'Ready' notification: %v", err))
 	}
 
 }
 
-func playAknowledgeSound() {
+// playAknowledgeNotification plays the aknowledge notification.
+func playAknowledgeNotification() {
 
 	cmd := "mpg123-alsa"
 
@@ -652,14 +605,13 @@ func playAknowledgeSound() {
 
 	args := []string{startupSoundFile}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+		log.Println(fmt.Errorf("Failed to play 'Aknowledge' notification: %v", err))
 	}
 
 }
 
-func playShutdownSound() {
+// playShutdownNotification plays the shutdown notification.
+func playShutdownNotification() {
 
 	cmd := "mpg123-alsa"
 
@@ -667,15 +619,14 @@ func playShutdownSound() {
 
 	args := []string{startupSoundFile}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+		log.Println(fmt.Errorf("Failed to play 'Shutdown' notification: %v", err))
 	}
 
 }
 
+// playLowBatteryNotification plays the low battery notification.
 // Need a power management board for this functionality MoPi 2 or ...
-func playLowBatterySound(batteryLevel int) {
+func playLowBatteryNotification(batteryLevel int) {
 
 	cmd := "gtts-cli"
 	batteryLevelString := strconv.Itoa(batteryLevel)
@@ -684,9 +635,7 @@ func playLowBatterySound(batteryLevel int) {
 
 	args := []string{batteryMessage, "|", "mpg123-alsa", "-"}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+		log.Println(fmt.Errorf("Failed to play 'LowBattery' notification: %v", err))
 	}
 }
 

@@ -1,8 +1,8 @@
-# StoryBox #
+# StoryBox
 
 StoryBox is Raspberry Pi-based device that uses an RFID reader to play audio stories, songs, and playlists for children.
 
-#### Summary ####
+#### Summary
 
 This repository contains the complete source code for StoryBox, a hardware project built around a Raspberry Pi that aims to provide children with a unique listening experience without screens. StoryBox features an RFID reader to identify story, song, album, and playlist cards, and integrated speakers to play the corresponding audio files.
 
@@ -12,13 +12,14 @@ The installation shell scripts are housed separately in their own dedicated repo
 
 [StoryBoxShellScripts](https://github.com/ozfive/StoryBoxShellScripts)
 
-### Images
+## Images
 The development hardware that I have assembled to undertake this project is shown in the images below:
 
 <img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg" alt=“Box-Front” width="415px" height="311">
 
 <img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt=“Box-Internal” width="415" height="553">
-### How do I get set up? ###
+
+## How do I get set up?
 
 Please follow these steps to set up the project on your Raspberry Pi Zero:
 
@@ -36,7 +37,6 @@ cd /home/pi
 git clone git@github.com:[YOUR GIT USERNAME]/StoryBox.git
 ```
 
-
 4. Navigate to the /home/pi/Storybox/ directory and make sure that install.sh is executable by running the following command in your terminal:
 
 ```shell
@@ -53,8 +53,6 @@ lsmod | grep spi
 ```
 
 If you see spi_bcm2835, then you can proceed.
-
-
 	
 ## Dependencies
 
@@ -75,7 +73,7 @@ If you see spi_bcm2835, then you can proceed.
 
 	This project relies on a sqlite3 database called rfids.db.
 
-### Who do I contact about this project? ###
+## Who To Contact
 
 * Repo owner or admin [@ozfive](https://github.com/ozfive)
 

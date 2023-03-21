@@ -35,7 +35,17 @@ apt update
 apt upgrade -y
 
 # Install required packages
-apt install -y libmpdclient-dev gcc meson ninja-build golang python3 mpc mpd mpg123 libasound2-dev git
+apt install -y libmpdclient-dev gcc meson ninja-build sqlite3 python3 mpc mpd mpg123 libasound2-dev git
+
+# Prepare the directory structure for MPD
+mkdir ~/.mpd/
+mkdir ~/music
+mkdir ~/.mpd/playlists
+touch ~/.mpd/database
+touch ~/.mpd/log
+touch ~/.mpd/pid
+
+mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf
 
 # Install gTTS library
 pip install gTTS
@@ -44,6 +54,7 @@ pip install gTTS
 wget https://golang.org/dl/go.1.19.2.linux-armv6l.tar.gz
 tar -C /usr/local -xzf go.1.19.2.linux-armv6l.tar.gz
 rm go.1.19.2.linux-armv6l.tar.gz
+
 
 #Set Go environment variables
 echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
@@ -89,8 +100,42 @@ gcc -o mpdtime mpdtime.c -lmpdclient
 mv mpdtime ~/StoryBox/bin/
 
 # Build and move StoryBox
-cd ~/StoryBox/ || exit
+mkdir /home/pi/go/
+mkdir /home/pi/go/src
+mkdir /home/pi/go/pkg
+mkdir /home/pi/go/bin
+
+cp -r /home/pi/StoryBox /home/pi/go/src
+cd /home/pi/go/src/Storybox/ || exit
 
 go build -o StoryBox
 
-mv StoryBox ~/StoryBox/bin/
+mv StoryBox /home/pi/go/src/StoryBox/bin/
+
+# Build Startup application in the Startup directory
+cd /home/pi/go/src/Storybox/Startup || exit
+go build -o Startup
+chmod +x Startup
+
+# Copy the Startup application to the bin directory to make it available to the system
+cp Startup /usr/local/bin
+
+# Copy the storyboxstartup.service file to lib/systemd/system/
+cd /home/pi/go/src/Storybox/ || exit
+
+cp storyboxstartup.service /lib/systemd/system/
+
+# Copy the started.mp3 file to /etc/sound/
+cp /home/pi/go/src/Storybox/Startup/started.mp3 /etc/sound/started.mp3
+
+# Set the permissions for the storyboxstartup.service file
+chmod 644 /lib/systemd/system/storyboxstartup.service
+
+# Enable the storyboxstartup.service file
+systemctl enable storyboxstartup.service
+
+# Start the storyboxstartup.service file
+systemctl start storyboxstartup.service
+
+# Reboot the system
+reboot now

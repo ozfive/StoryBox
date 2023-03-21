@@ -27,36 +27,70 @@ if [ "$(id -u)" != 0 ]; then
   exit 1
 fi
 
-productname="StoryBox" # the name of the product to install
-scriptname="install"   # the name of this script
+# productname="StoryBox" # the name of the product to install
+# scriptname="install"   # the name of this script
 
-sudo apt update
-sudo apt upgrade
-sudo apt install libmpdclient-dev gcc meson ninja-build golang python mpc mpd mpg123-alsa
+# Update and upgrade the system
+apt update
+apt upgrade -y
+
+# Install required packages
+apt install -y libmpdclient-dev gcc meson ninja-build golang python3 mpc mpd mpg123 libasound2-dev git
+
+# Install gTTS library
 pip install gTTS
 
-wget https://go.dev/dl/go1.19.2.linux-arm64.tar.gz
+# Download and install the Go compiler
+wget https://golang.org/dl/go.1.19.2.linux-armv6l.tar.gz
+tar -C /usr/local -xzf go.1.19.2.linux-armv6l.tar.gz
+rm go.1.19.2.linux-armv6l.tar.gz
 
-# Untar the archive
-tar -C /usr/local -xzf go1.19.2.linux-armv6l.tar.gz
+#Set Go environment variables
+echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
+echo "export GOPATH=\$HOME/pi/go/" >> ~/.bashrc
 
-# Remove the tar.gz file.
-rm go1.19.2.linux-armv6l.tar.gz
+# shellcheck source=/dev/null
+source ~/.bashrc
 
-# Set the PATH environment variable.
-echo "export PATH=$PATH:/usr/local/go/bin" >>~/.profile
-
-# Set the GOPATH environment variable.
-echo "export GOPATH=$HOME/go" >>~/.profile
-
-goVersion=$(go version | {
-  read -r _ _ v _
-  echo "${v#go}"
-})
-
-if $goVersion -lt "1.16.6"; then
-  echo "You have chosen to install an older version of go which won't work with this project."
-  exit 1
-fi
-
+# Clone the StoryBox repository
 git clone https://github.com/ozfive/StoryBox.git
+
+# Clone the StoryBoxShellScripts repository and execute phatbeat.sh
+cd ~ || exit
+git clone https://github.com/ozfive/StoryBoxShellScripts.git
+cd StoryBoxShellScripts || exit
+chmod +x phatbeat.sh
+./phatbeat.sh
+
+cd wittypi3mini || exit
+chmod +x install.sh
+./install.sh
+
+# Enable SPI interface
+raspi-config nonint do_spi 0
+
+# Build and install libmpdclient
+cd ~/StoryBox/lib/ || exit
+git clone https://github.com/MusicPlayerDaemon/libmpdclient.git
+cd libmpdclient || exit
+meson . output
+ninja -C output
+ninja -C output install
+
+# Build and move mpdcurrentsong, mpdplaystate, and mpdtime
+cd ~/StoryBox/lib/ || exit
+gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
+mv mpdcurrentsong ~/StoryBox/bin/
+
+gcc -o mpdplaystate mpdplaystate.c -lmpdclient
+mv mpdplaystate ~/StoryBox/bin/
+
+gcc -o mpdtime mpdtime.c -lmpdclient
+mv mpdtime ~/StoryBox/bin/
+
+# Build and move StoryBox
+cd ~/StoryBox/ || exit
+
+go build -o StoryBox
+
+mv StoryBox ~/StoryBox/bin/

@@ -640,66 +640,57 @@ func playCustomMessage(message string) {
 
 	args := []string{message, "|", "mpg123-alsa", "-"}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+		log.Println(fmt.Errorf("Failed to play 'Error' notification: %v", err))
 	}
 
 }
 
-func ClearPlaylist() {
-
-	cmdClear := "mpc"
-
-	argsClear := []string{"--host", "alraune22@localhost", "clear"}
-
-	if err := exec.Command(cmdClear, argsClear...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
+func ClearPlaylist() error {
+	const (
+		mpcCmd     = "mpc"
+		mpcClear   = "clear"
+		mpcUpdate  = "update"
+		mpcHostArg = "--host"
+		mpcHost    = "alraune22@localhost"
+	)
+	clearArgs := []string{mpcHostArg, mpcHost, mpcClear}
+	if err := exec.Command(mpcCmd, clearArgs...).Run(); err != nil {
 		playErrorNotification()
 		playCustomMessage("The playlist could not be cleared. Please try again.")
+		return fmt.Errorf("failed to clear playlist: %v", err)
+	}
+	playAknowledgeNotification()
+	playCustomMessage("The playlist has been cleared.")
 
-	} else {
-
-		playAknowledgeNotification()
-		playCustomMessage("The playlist has been cleared.")
-
+	updateArgs := []string{mpcHostArg, mpcHost, mpcUpdate}
+	if err := exec.Command(mpcCmd, updateArgs...).Run(); err != nil {
+		log.Println(fmt.Errorf("Failed to update the music database: %v", err))
 	}
 
-	cmdUpdate := "mpc"
-
-	argsUpdate := []string{"--host", "alraune22@localhost", "update"}
-
-	if err := exec.Command(cmdUpdate, argsUpdate...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-	}
-
+	return nil
 }
 
-func LoadPlaylist(playlist string) {
-
-	ClearPlaylist()
-
-	cmdLoad := "mpc"
-
-	argsLoad := []string{"--host", "alraune22@localhost", "load", playlist}
-
-	if err := exec.Command(cmdLoad, argsLoad...).Run(); err != nil {
-
-		log.Println(os.Stderr, err)
-
-		playErrorNotification()
-		playCustomMessage("The playlist could not be loaded. Please try again.")
-
-	} else {
-
-		playAknowledgeNotification()
-		playCustomMessage("The playlist has been loaded.")
+func LoadPlaylist(playlist string) error {
+	const (
+		mpcCmd     = "mpc"
+		mpcLoad    = "load"
+		mpcHostArg = "--host"
+		mpcHost    = "alraune22@localhost"
+	)
+	if err := ClearPlaylist(); err != nil {
+		return fmt.Errorf("failed to clear playlist before loading: %v", err)
 	}
 
+	loadArgs := []string{mpcHostArg, mpcHost, mpcLoad, playlist}
+	if err := exec.Command(mpcCmd, loadArgs...).Run(); err != nil {
+		playErrorNotification()
+		playCustomMessage("The playlist could not be loaded. Please try again.")
+		return fmt.Errorf("failed to load playlist: %v", err)
+	}
+
+	playAknowledgeNotification()
+	playCustomMessage("The playlist has been loaded.")
+	return nil
 }
 
 func PlayPlaylist(playlist string) {
@@ -710,7 +701,7 @@ func PlayPlaylist(playlist string) {
 
 	if err := exec.Command(cmd, args...).Run(); err != nil {
 
-		log.Println(os.Stderr, err)
+		log.Println(fmt.Errorf("Failed to play Playlist: %v", err))
 
 		playErrorNotification()
 		playCustomMessage("The playlist could not be played. Please try again.")
@@ -766,35 +757,17 @@ func StopPlaylist() {
 
 }
 
-func GetCurrentTrackName() (currentTrackName string) {
-
-	currentTrackName = ""
-
+func GetCurrentTrackName() string {
 	cmdGetCurrentTrackName := "/usr/local/bin/mpdcurrentsong"
-
-	execCmd := exec.Command(cmdGetCurrentTrackName)
-
-	var out bytes.Buffer
-	var stderr bytes.Buffer
-
-	execCmd.Stdout = &out
-	execCmd.Stderr = &stderr
-
-	err := execCmd.Run()
-
+	out, err := exec.Command(cmdGetCurrentTrackName).Output()
 	if err != nil {
-		log.Println(os.Stderr, err)
-		currentTrackName = "ERROR"
-
+		log.Println(err)
 		playErrorNotification()
 		playCustomMessage("The current track could not be retrieved. Please try again.")
-
-	} else {
-		currentTrackName = strings.Trim(out.String(), "\n")
+		return "ERROR"
 	}
-
+	currentTrackName := strings.TrimSpace(string(out))
 	return currentTrackName
-
 }
 
 func GetCurrentPlayState() (currentPlayState string) {

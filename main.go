@@ -618,8 +618,7 @@ func playErrorSound() {
 
 	cmd := "mpg123-alsa"
 
-	// Final location: /etc/sound/error.mp3
-	errorSoundFile := "subtleErrorBell.mp3"
+	errorSoundFile := "/etc/sound/subtleErrorBell.mp3"
 
 	args := []string{errorSoundFile}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
@@ -634,8 +633,7 @@ func playReadySound() {
 
 	cmd := "mpg123-alsa"
 
-	// Final location: /etc/sound/started.mp3
-	startupSoundFile := "ready.mp3"
+	startupSoundFile := "/etc/sound/ready.mp3"
 
 	args := []string{startupSoundFile}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
@@ -650,8 +648,7 @@ func playAknowledgeSound() {
 
 	cmd := "mpg123-alsa"
 
-	// Final location: /etc/sound/started.mp3
-	startupSoundFile := "intuition.mp3"
+	startupSoundFile := "/etc/sound/intuition.mp3"
 
 	args := []string{startupSoundFile}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
@@ -666,8 +663,7 @@ func playShutdownSound() {
 
 	cmd := "mpg123-alsa"
 
-	// Final location: /etc/sound/started.mp3
-	startupSoundFile := "shutdown.mp3"
+	startupSoundFile := "/etc/sound/shutdown.mp3"
 
 	args := []string{startupSoundFile}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
@@ -683,7 +679,7 @@ func playLowBatterySound(batteryLevel int) {
 
 	cmd := "gtts-cli"
 	batteryLevelString := strconv.Itoa(batteryLevel)
-	// Final location: /etc/sound/started.mp3
+
 	batteryMessage := "\"The battery is at, " + batteryLevelString + " percent!\""
 
 	args := []string{batteryMessage, "|", "mpg123-alsa", "-"}

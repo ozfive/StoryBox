@@ -128,6 +128,9 @@ cp storyboxstartup.service /lib/systemd/system/
 # Copy the started.mp3 file to /etc/sound/
 cp /home/pi/go/src/Storybox/Startup/started.mp3 /etc/sound/started.mp3
 
+# Copy the rest of the sound files to /etc/sound/
+cp /home/pi/go/src/Storybox/sys-audio/*.mp3 /etc/sound/
+
 # Set the permissions for the storyboxstartup.service file
 chmod 644 /lib/systemd/system/storyboxstartup.service
 

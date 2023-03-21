@@ -9,10 +9,9 @@ The StoryBox project includes several software components, including a startup s
 ### Images
 Dev hardware I put together to work on this project:
 
-![Box-Front](https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg)
+<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg" alt=“Box-Front” width="415px" height="311">
 
-![Box-Internal](https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg)
-
+<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt=“Box-Internal” width="415" height="553">
 ### How do I get set up? ###
 
 Fork this repository.

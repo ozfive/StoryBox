@@ -30,7 +30,7 @@ Please follow these steps to set up the project on your Raspberry Pi Zero:
 sudo apt install git
 ```
 
-3. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal. Please ensure to replace `[YOUR GIT USERNAME]` with your own git username.:
+3. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal. Please make sure to replace `[YOUR GIT USERNAME]` with your own git username.:
 
 ```shell
 cd /home/pi

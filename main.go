@@ -407,66 +407,71 @@ func getLogFilePath(logFileName string) string {
 
 // CreatePlaylist creates a new playlist in the database.
 func CreatePlaylist(url string, playlistname string, ctx iris.Context) {
-
-	// Create the playlist in the database.
-	// If the playlist already exists in the database, return a 400 error with appropriate message.
-	// If the playlist does not exist in the database, create the playlist in the database.
-	// Return a 200 status code with appropriate message.
-
-	var id int = 0
-
-	sql := "SELECT id, url, playlistname FROM playlist WHERE url = '" + url + "' AND playlistname = '" + playlistname + "';"
-
 	database := connectToDatabase()
 
-	rows := database.QueryRow(sql)
-
-	err := rows.Scan(&id, &url, &playlistname)
+	// Check if the playlist already exists in the database.
+	var count int
+	sqlCheck := "SELECT COUNT(*) FROM playlist WHERE url = ? AND playlistname = ?"
+	err := database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
 
 	if err != nil {
 		ctx.StatusCode(400)
-
 		ctx.JSON(iris.Map{
 			"status_code": 400,
 			"message":     "Something went wrong with the database query. Please try again.",
 		})
-
-	} else {
-
-		if url != "" {
-			sql := "INSERT INTO playlist (url, playlistname) VALUES ('" + url + "', '" + playlistname + "');"
-
-			_, err := database.Exec(sql)
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-		} else {
-			ctx.StatusCode(400)
-
-			ctx.JSON(iris.Map{
-				"status_code": 400,
-				"message":     "The playlist already exists in the database.",
-			})
-		}
+		return
 	}
+
+	if count > 0 {
+		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "The playlist already exists in the database.",
+		})
+		return
+	}
+
+	// Insert the new playlist into the database.
+	sqlInsert := "INSERT INTO playlist (url, playlistname) VALUES (?, ?)"
+	_, err = database.Exec(sqlInsert, url, playlistname)
+
+	if err != nil {
+		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "Failed to create playlist in the database. Please try again.",
+		})
+		return
+	}
+
+	// Return a success message.
+	ctx.StatusCode(200)
+	ctx.JSON(iris.Map{
+		"status_code": 200,
+		"message":     "The playlist has been created in the database.",
+	})
 }
 
 // DeletePlaylist deletes a playlist from the database.
 func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 	database := connectToDatabase()
-	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
-	row := database.QueryRow(sql, url, playlistname)
 
-	var id int
-	var urlFromDB string
-	var playlistNameFromDB string
-
-	err := row.Scan(&id, &urlFromDB, &playlistNameFromDB)
+	// Check if the playlist exists in the database.
+	var count int
+	sqlCheck := "SELECT COUNT(*) FROM playlist WHERE url = ? AND playlistname = ?"
+	err := database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
 
 	if err != nil {
+		ctx.StatusCode(400)
+		ctx.JSON(iris.Map{
+			"status_code": 400,
+			"message":     "Something went wrong with the database query. Please try again.",
+		})
+		return
+	}
+
+	if count == 0 {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
@@ -475,27 +480,20 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 		return
 	}
 
-	sqlDelete := "DELETE FROM playlist WHERE url = ? AND playlistname = ?;"
-	statement, err := database.Prepare(sqlDelete)
+	// Delete the playlist from the database.
+	sqlDelete := "DELETE FROM playlist WHERE url = ? AND playlistname = ?"
+	_, err = database.Exec(sqlDelete, url, playlistname)
+
 	if err != nil {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "Something went wrong with the database query. Please try again.",
+			"message":     "Failed to delete playlist from the database. Please try again.",
 		})
 		return
 	}
 
-	_, err = statement.Exec(url, playlistname)
-	if err != nil {
-		ctx.StatusCode(400)
-		ctx.JSON(iris.Map{
-			"status_code": 400,
-			"message":     "Something went wrong with the database query. Please try again.",
-		})
-		return
-	}
-
+	// Return a success message.
 	ctx.StatusCode(200)
 	ctx.JSON(iris.Map{
 		"status_code": 200,
@@ -503,102 +501,92 @@ func DeletePlaylist(url string, playlistname string, ctx iris.Context) {
 	})
 }
 
+type Playlist struct {
+	ID             int
+	URLFromDB      string
+	PlaylistNameDB string
+	Err            error
+}
+
 // GetPlaylist gets a playlist from the database.
-func GetPlaylist(url string, playlistname string, ctx iris.Context) {
-	database := connectToDatabase()
+func GetPlaylist(url, playlistname string) Playlist {
+
 	sql := "SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;"
+
+	database := connectToDatabase()
+
 	row := database.QueryRow(sql, url, playlistname)
 
-	var id int
-	var urlFromDB string
-	var playlistNameFromDB string
+	var playlist Playlist
 
-	err := row.Scan(&id, &urlFromDB, &playlistNameFromDB)
-
+	err := row.Scan(&playlist.ID, &playlist.URLFromDB, &playlist.PlaylistNameDB)
 	if err != nil {
-		ctx.StatusCode(400)
-		ctx.JSON(iris.Map{
-			"status_code": 400,
-			"message":     "The playlist does not exist in the database.",
-		})
-		return
+		playlist.Err = fmt.Errorf("failed to retrieve playlist: %v", err)
 	}
 
-	ctx.StatusCode(200)
-	ctx.JSON(iris.Map{
-		"id":           id,
-		"url":          urlFromDB,
-		"playlistname": playlistNameFromDB,
-	})
+	return playlist
+}
+
+type Sound struct {
+	File string
+	Err  error
+}
+
+func playSound(s Sound) {
+	cmd := "mpg123-alsa"
+	args := []string{s.File}
+
+	if err := exec.Command(cmd, args...).Run(); err != nil {
+		s.Err = fmt.Errorf("failed to play sound: %v", err)
+		log.Println(s.Err)
+	}
 }
 
 // playErrorNotification plays the error notification.
-func playErrorNotification() {
-
-	cmd := "mpg123-alsa"
-	errorSoundFile := "/etc/sound/subtleErrorBell.mp3"
-	args := []string{errorSoundFile}
-
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-		log.Println(fmt.Errorf("Failed to play 'Error' notification: %v", err))
-	}
-
+func playErrorNotification() Sound {
+	s := Sound{File: "/etc/sound/subtleErrorBell.mp3"}
+	playSound(s)
+	return s
 }
 
 // playReadyNotification plays the ready notification.
-func playReadyNotification() {
-
-	cmd := "mpg123-alsa"
-	startupSoundFile := "/etc/sound/ready.mp3"
-	args := []string{startupSoundFile}
-
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-		log.Println(fmt.Errorf("Failed to play 'Ready' notification: %v", err))
-	}
-
+func playReadyNotification() Sound {
+	s := Sound{File: "/etc/sound/ready.mp3"}
+	playSound(s)
+	return s
 }
 
 // playAknowledgeNotification plays the aknowledge notification.
-func playAknowledgeNotification() {
-
-	cmd := "mpg123-alsa"
-
-	startupSoundFile := "/etc/sound/intuition.mp3"
-
-	args := []string{startupSoundFile}
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-		log.Println(fmt.Errorf("Failed to play 'Aknowledge' notification: %v", err))
-	}
-
+func playAknowledgeNotification() Sound {
+	s := Sound{File: "/etc/sound/intuition.mp3"}
+	playSound(s)
+	return s
 }
 
 // playShutdownNotification plays the shutdown notification.
-func playShutdownNotification() {
-
-	cmd := "mpg123-alsa"
-
-	startupSoundFile := "/etc/sound/shutdown.mp3"
-
-	args := []string{startupSoundFile}
-	if err := exec.Command(cmd, args...).Run(); err != nil {
-		log.Println(fmt.Errorf("Failed to play 'Shutdown' notification: %v", err))
-	}
-
+func playShutdownNotification() Sound {
+	s := Sound{File: "/etc/sound/shutdown.mp3"}
+	playSound(s)
+	return s
 }
 
-// playLowBatteryNotification plays the low battery notification.
-// Need a power management board for this functionality MoPi 2 or ...
-func playLowBatteryNotification(batteryLevel int) {
+func playLowBatteryNotification(batteryLevel int) Sound {
+	s := generateBatteryMessage(batteryLevel)
+	playSound(s)
+	return s
+}
 
+func generateBatteryMessage(batteryLevel int) Sound {
+	s := Sound{File: "batteryMessage.mp3"}
 	cmd := "gtts-cli"
 	batteryLevelString := strconv.Itoa(batteryLevel)
-
-	batteryMessage := "\"The battery is at, " + batteryLevelString + " percent!\""
-
-	args := []string{batteryMessage, "|", "mpg123-alsa", "-"}
+	message := "The battery is at " + batteryLevelString + " percent!"
+	args := []string{"-o", s.File, message}
 	if err := exec.Command(cmd, args...).Run(); err != nil {
-		log.Println(fmt.Errorf("Failed to play 'LowBattery' notification: %v", err))
+		s.Err = fmt.Errorf("failed to generate battery message: %v", err)
+		log.Println(s.Err)
 	}
+	return s
 }
 
 /*

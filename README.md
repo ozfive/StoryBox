@@ -15,9 +15,29 @@ Dev hardware I put together to work on this project:
 
 ### How do I get set up? ###
 
+Fork this repository.
+
+Install git on your Rasperry Pi Zero. 
+```shell
+sudo apt install git
+```
+You must then clone your fork into /home/pi/ directory.
 
 ```shell
-reboot -n
+cd /home/pi
+
+git clone git@github.com:[YOUR GIT USERNAME]/StoryBox.git
+```
+Make sure that you replace ```'[YOUR GIT USERNAME]'``` with your git username when you execute the above command.
+
+Now move into the /home/pi/Storybox/ directory and make sure install.sh is executable.
+
+```shell
+cd Storybox/
+
+chmod +x install.sh
+
+./install.sh
 ```
 
 When your Raspberry Pi Zero W has rebooted execute the following command to ensure the SPI interface was enabled

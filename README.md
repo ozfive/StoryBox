@@ -1,6 +1,6 @@
 # StoryBox
 
-StoryBox is Raspberry Pi-based device that uses an RFID reader to play audio stories, songs, and playlists for children.
+StoryBox is a Raspberry Pi-based device that uses an RFID reader to play audio stories, songs, and playlists for children.
 
 ## Summary
 

@@ -68,7 +68,7 @@ func main() {
 
 /*
 	UPDATE rfid
-	SET url = 'https://olm-build-artifacts.sfo2.cdn.digitaloceanspaces.com/track.mp3',
+	SET url = '',
 	playlistname = 'remotePlaylist'
 	WHERE uniqueid = 'Nalini'
 */
@@ -231,11 +231,23 @@ func handleRFIDTag(ctx iris.Context, database *sql.DB, rfid *RFID, existingTag b
 	var id int
 	var tagid, uniqueid, url, playlistname string
 
-	sqlQuery := fmt.Sprintf("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '%s' AND uniqueid = '%s';", rfid.TagID, rfid.UniqueID)
-	rows, _ := database.Query(sqlQuery)
+	stmt, err := database.Prepare("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = ? AND uniqueid = ?;")
+	if err != nil {
+		panic(err)
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(rfid.TagID, rfid.UniqueID)
+	if err != nil {
+		panic(err)
+	}
+	defer rows.Close()
 
 	for rows.Next() {
-		rows.Scan(&id, &tagid, &uniqueid, &url, &playlistname)
+		err = rows.Scan(&id, &tagid, &uniqueid, &url, &playlistname)
+		if err != nil {
+			panic(err)
+		}
 		fmt.Println(strconv.Itoa(id) + ": " + tagid + " " + uniqueid + " " + url + " " + playlistname)
 	}
 

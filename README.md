@@ -1,43 +1,43 @@
-# StoryBox
+# Introducing StoryBox
 
-StoryBox is a Raspberry Pi-based device that uses an RFID reader to play audio stories, songs, and playlists for children.
+StoryBox is an engaging and entertaining device designed for children. Built on a Raspberry Pi foundation, StoryBox incorporates an RFID reader to play audio stories, songs, and playlists, offering a delightful listening experience without screens.
 
-## Summary
+## Overview
 
-This repository contains the complete source code for StoryBox, a hardware project built around a Raspberry Pi that aims to provide children with a unique listening experience without screens. StoryBox features an RFID reader to identify story, song, album, and playlist cards, and integrated speakers to play the corresponding audio files.
+The StoryBox repository encompasses the entire source code for this inventive hardware project centered on a Raspberry Pi. Designed to captivate children's imagination, StoryBox utilizes an RFID reader to recognize story, song, album, and playlist cards, and it features integrated speakers to deliver the associated audio content.
 
-In addition to the hardware components, the project includes a variety of software applications. A startup application provides feedback to the user when the hardware is ready, and a server written in Go enables communication with the RFID reader.
+Alongside the hardware components, this project incorporates various software applications, including a startup application to inform users when the hardware is ready, and a Go-based server that facilitates communication with the RFID reader.
 
-The hardware installation shell scripts are housed separately in their own dedicated repository.
+The hardware installation shell scripts reside in a separate repository:
 
 [StoryBoxShellScripts](https://github.com/ozfive/StoryBoxShellScripts)
 
-## Images
-The development hardware that I have assembled to undertake this project is shown in the images below:
+## Gallery
+Below are images of the development hardware assembled for this project:
 
 <img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg" alt=“Box-Front” width="415px" height="311">
 
 <img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt=“Box-Internal” width="415" height="553">
 
-## How do I get set up?
+## Setup Guide
 
-Please follow these steps to set up the project on your Raspberry Pi Zero:
+To set up the project on your Raspberry Pi Zero, please follow these steps:
 
-1. Begin by forking the repository.
-2. Install git on your Raspberry Pi Zero by running the following command in your terminal:
+1. Fork the repository.
+2. Install git on your Raspberry Pi Zero by executing this command in your terminal:
 
 ```shell
 sudo apt install git
 ```
 
-3. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal. Please make sure to replace `[YOUR GIT USERNAME]` with your own git username.:
+3. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal. Please make sure to replace `[GIT_USER]` with your own git username.:
 
 ```shell
 cd /home/pi
-git clone git@github.com:[YOUR GIT USERNAME]/StoryBox.git
+git clone git@github.com:[GIT_USER]/StoryBox.git
 ```
 
-4. Navigate to the /home/pi/Storybox/ directory and make sure that install.sh is executable by running the following commands in your terminal:
+4. Access the /home/pi/Storybox/ directory and ensure that install.sh is executable by running these commands in your terminal:
 
 ```shell
 cd Storybox/
@@ -47,13 +47,13 @@ chmod +x install.sh
 ./install.sh
 ```
 
-5. Once your Raspberry Pi Zero has rebooted, execute the following command in your terminal to ensure that the SPI interface is enabled:
+5. After your Raspberry Pi Zero reboots, run this command to verify that the SPI interface is enabled:
 
 ```shell
 lsmod | grep spi
 ```
 
-If you see spi_bcm2835, then you can proceed.
+If you see spi_bcm2835, you can proceed.
 	
 ## Dependencies
 
@@ -72,11 +72,11 @@ If you see spi_bcm2835, then you can proceed.
 
 ## Database configuration
 
-	This project relies on a sqlite3 database called rfids.db.
+	The project depends on a SQLite3 database named rfids.db.
 
 ## Who To Contact
 
-* Repo owner or admin [@ozfive](https://github.com/ozfive)
+* For any inquiries, please reach out to the repo owner [@ozfive](https://github.com/ozfive)
 
 ## License
 This program is licensed under the [MIT License](https://opensource.org/license/mit/). See the LICENSE file for details.

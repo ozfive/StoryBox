@@ -284,8 +284,13 @@ func handleRFIDCreation(ctx iris.Context, database *sql.DB, rfid *RFID) {
 	var id int
 	var tagid, uniqueid, url, playlistname string
 
-	sqlQuery := fmt.Sprintf("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = '%s' AND uniqueid = '%s';", rfid.TagID, rfid.UniqueID)
-	err := database.QueryRow(sqlQuery).Scan(&id, &tagid, &uniqueid, &url, &playlistname)
+	stmtSelect, err := database.Prepare("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = ? AND uniqueid = ?;")
+	if err != nil {
+		panic(err)
+	}
+	defer stmtSelect.Close()
+
+	err = stmtSelect.QueryRow(rfid.TagID, rfid.UniqueID).Scan(&id, &tagid, &uniqueid, &url, &playlistname)
 
 	if err == nil && tagid != "" {
 		ctx.StatusCode(400)
@@ -294,8 +299,13 @@ func handleRFIDCreation(ctx iris.Context, database *sql.DB, rfid *RFID) {
 			"message":     "The RFID tag already exists in the database.",
 		})
 	} else {
-		sqlInsert := fmt.Sprintf("INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES ('%s', '%s', '%s', '%s');", rfid.TagID, rfid.UniqueID, rfid.URL, rfid.PlaylistName)
-		_, err := database.Exec(sqlInsert)
+		stmtInsert, err := database.Prepare("INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES (?, ?, ?, ?);")
+		if err != nil {
+			panic(err)
+		}
+		defer stmtInsert.Close()
+
+		_, err = stmtInsert.Exec(rfid.TagID, rfid.UniqueID, rfid.URL, rfid.PlaylistName)
 
 		if err != nil {
 			ctx.StatusCode(400)

@@ -15,7 +15,7 @@ Below are images of the development hardware assembled for this project:
 
 <img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg" alt=“Box-Front” width="415px" height="311">
 
-<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt=“Box-Internal” width="415" height="553">
+<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt=“Box-Internal” width="500" height="375">
 
 ## Setup Guide
 

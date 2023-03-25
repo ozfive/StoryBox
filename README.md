@@ -8,9 +8,7 @@ The StoryBox repository encompasses the entire source code for this inventive ha
 
 Alongside the hardware components, this project incorporates various software applications, including a startup application to inform users when the hardware is ready, and a Go-based server that facilitates communication with the RFID reader.
 
-The hardware installation shell scripts reside in a separate repository:
-
-[StoryBoxShellScripts](https://github.com/ozfive/StoryBoxShellScripts)
+The hardware installation shell scripts reside in a separate repository: [StoryBoxShellScripts](https://github.com/ozfive/StoryBoxShellScripts)
 
 ## Gallery
 Below are images of the development hardware assembled for this project:

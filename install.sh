@@ -141,7 +141,3 @@ systemctl enable storyboxstartup.service
 
 # Start the storyboxstartup.service file
 systemctl start storyboxstartup.service
-
-# Reboot the system
-reboot now
-

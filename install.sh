@@ -50,6 +50,12 @@ mv /home/chris/StoryBox/lib/mpd.conf /home/chris/.mpd/mpd.conf
 # Install gTTS library
 pip install gTTS
 
+# Make all of the directories needed for Go.
+mkdir /home/chris/go/
+mkdir /home/chris/go/src
+mkdir /home/chris/go/pkg
+mkdir /home/chris/go/bin
+
 # Download and install the Go compiler
 wget https://go.dev/dl/go1.20.5.linux-armv6l.tar.gz
 tar -C /usr/local -xzf go1.20.5.linux-armv6l.tar.gz
@@ -61,6 +67,8 @@ echo "export GOPATH=\$HOME/go/" >> /home/chris/.bashrc
 
 # shellcheck source=/dev/null
 source /home/chris/.bashrc
+
+echo "Cloning the StoryBox repo..."
 
 # Clone the StoryBox repository
 git clone https://github.com/ozfive/StoryBox.git
@@ -99,14 +107,6 @@ mv mpdplaystate /usr/local/bin/mpdplaystate
 gcc -o mpdtime mpdtime.c -lmpdclient
 mv mpdtime /usr/local/bin/mpdtime
 
-# Build and move StoryBox
-mkdir /home/chris/go/
-mkdir /home/chris/go/src
-mkdir /home/chris/go/pkg
-mkdir /home/chris/go/bin
-
-cp -r /home/chris/StoryBox/ /home/chris/go/src/
-
 echo "Building StoryBox binary"
 
 # Build StoryBox binary in the Startup directory
@@ -116,20 +116,27 @@ echo "Completed!"
 
 echo "Copying StoryBox binary to /usr/local/bin/Storybox/"
 
-## cp StoryBox /usr/local/bin/StoryBox/ || exit
+## cp /home/chris/go/src/StoryBox/StoryBox /usr/local/bin/StoryBox/ || exit
 
 echo "Completed!"
+
+cd /home/chris/go/src/ || exit
+
+echo "Cloning the StoryBox-Startup repo."
+
+# Clone the StoryBox repository
+git clone https://github.com/ozfive/StoryBox-Startup.git
 
 echo "Building 'Startup' Binary"
 
 # Build Startup binary in the Startup directory
-## go build -o /home/chris/go/src/StoryBox/Startup/Startup || exit
+## go build -o /home/chris/go/src/StoryBox-Startup/Startup || exit
 
 echo "Completed!"
 
 echo "Copying Startup binary to /usr/local/bin/"
 # Copy the Startup binary to the bin directory to make it available to the system
-## cp /home/chris/go/src/StoryBox/Startup/Startup /usr/local/bin || exit
+## cp /home/chris/go/src/StoryBox-Startup/Startup /usr/local/bin || exit
 
 echo "Completed!"
 
@@ -142,6 +149,7 @@ cp /home/chris/go/src/StoryBox/storyboxstartup.service /lib/systemd/system/story
 echo "Completed!"
 
 mkdir /etc/sound/
+
 # Copy the started.mp3 file to /etc/sound/
 cp /home/chris/go/src/StoryBox/Startup/started.mp3 /etc/sound/started.mp3
 

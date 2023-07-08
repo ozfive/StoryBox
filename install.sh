@@ -51,14 +51,14 @@ mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf
 pip install gTTS
 
 # Download and install the Go compiler
-wget https://golang.org/dl/go.1.19.2.linux-armv6l.tar.gz
-tar -C /usr/local -xzf go.1.19.2.linux-armv6l.tar.gz
-rm go.1.19.2.linux-armv6l.tar.gz
+wget https://go.dev/dl/go1.20.5.linux-armv6l.tar.gz
+tar -C /usr/local -xzf go.1.20.5.linux-armv6l.tar.gz
+rm go.1.20.5.linux-armv6l.tar.gz
 
 
 #Set Go environment variables
 echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
-echo "export GOPATH=\$HOME/pi/go/" >> ~/.bashrc
+echo "export GOPATH=\$HOME/go/" >> ~/.bashrc
 
 # shellcheck source=/dev/null
 source ~/.bashrc

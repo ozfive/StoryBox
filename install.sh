@@ -55,13 +55,13 @@ wget https://go.dev/dl/go1.20.5.linux-armv6l.tar.gz
 tar -C /usr/local -xzf go1.20.5.linux-armv6l.tar.gz
 rm go1.20.5.linux-armv6l.tar.gz
 
-
 #Set Go environment variables
 echo "export PATH=$PATH:/usr/local/go/bin" >> /home/chris/.bashrc
 echo "export GOPATH=\$HOME/go/" >> /home/chris/.bashrc
 
 # shellcheck source=/dev/null
 source /home/chris/.bashrc
+
 # Clone the StoryBox repository
 git clone https://github.com/ozfive/StoryBox.git
 
@@ -105,28 +105,43 @@ mkdir /home/chris/go/src
 mkdir /home/chris/go/pkg
 mkdir /home/chris/go/bin
 
-cp -r /home/chris/StoryBox /home/chris/go/src
-cd /home/chris/go/src/StoryBox/ || exit
+cp -r /home/chris/StoryBox/ /home/chris/go/src/
 
 echo "Building StoryBox binary"
-go build -o StoryBox
 
-mv StoryBox /usr/local/bin/StoryBox
+# Build StoryBox binary in the Startup directory
+## go build -o /home/chris/go/src/StoryBox/StoryBox || exit
 
-# Build Startup application in the Startup directory
-cd /home/chris/go/src/StoryBox/Startup || exit
+echo "Completed!"
 
-echo "Building Startup Binary"
-go build -o Startup
-chmod +x Startup
+echo "Copying StoryBox binary to /usr/local/bin/Storybox/"
 
-# Copy the Startup application to the bin directory to make it available to the system
-cp Startup /usr/local/bin
+## cp StoryBox /usr/local/bin/StoryBox/ || exit
+
+echo "Completed!"
+
+echo "Building 'Startup' Binary"
+
+# Build Startup binary in the Startup directory
+## go build -o /home/chris/go/src/StoryBox/Startup/Startup || exit
+
+echo "Completed!"
+
+echo "Copying Startup binary to /usr/local/bin/"
+# Copy the Startup binary to the bin directory to make it available to the system
+## cp /home/chris/go/src/StoryBox/Startup/Startup /usr/local/bin || exit
+
+echo "Completed!"
 
 # Copy storyboxstartup.service file to lib/systemd/system/
-cd /home/chris/go/src/StoryBox/ || exit
-cp storyboxstartup.service /lib/systemd/system/storyboxstartup.service
 
+echo "Copying storyboxstartup.service to /lib/systemd/system/"
+
+cp /home/chris/go/src/StoryBox/storyboxstartup.service /lib/systemd/system/storyboxstartup.service
+
+echo "Completed!"
+
+mkdir /etc/sound/
 # Copy the started.mp3 file to /etc/sound/
 cp /home/chris/go/src/StoryBox/Startup/started.mp3 /etc/sound/started.mp3
 

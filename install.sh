@@ -35,39 +35,38 @@ apt update
 apt upgrade -y
 
 # Install required packages
-apt install -y libmpdclient-dev gcc meson ninja-build sqlite3 python3 mpc mpd mpg123 libasound2-dev git
+apt install -y libmpdclient-dev gcc meson ninja-build sqlite3 python3 python3-pip mpc mpd mpg123 libasound2-dev git
 
 # Prepare the directory structure for MPD
-mkdir ~/.mpd/
-mkdir ~/music
-mkdir ~/.mpd/playlists
-touch ~/.mpd/database
-touch ~/.mpd/log
-touch ~/.mpd/pid
+mkdir /home/chris/.mpd/
+mkdir /home/chris/music
+mkdir /home/chris/.mpd/playlists
+touch /home/chris/.mpd/database
+touch /home/chris/.mpd/log
+touch /home/chris/.mpd/pid
 
-mv /home/pi/StoryBox/MainSystem/lib/mpd.conf ~/.mpd/mpd.conf
+mv /home/chris/StoryBox/lib/mpd.conf /home/chris/.mpd/mpd.conf
 
 # Install gTTS library
 pip install gTTS
 
 # Download and install the Go compiler
 wget https://go.dev/dl/go1.20.5.linux-armv6l.tar.gz
-tar -C /usr/local -xzf go.1.20.5.linux-armv6l.tar.gz
-rm go.1.20.5.linux-armv6l.tar.gz
+tar -C /usr/local -xzf go1.20.5.linux-armv6l.tar.gz
+rm go1.20.5.linux-armv6l.tar.gz
 
 
 #Set Go environment variables
-echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
-echo "export GOPATH=\$HOME/go/" >> ~/.bashrc
+echo "export PATH=$PATH:/usr/local/go/bin" >> /home/chris/.bashrc
+echo "export GOPATH=\$HOME/go/" >> /home/chris/.bashrc
 
 # shellcheck source=/dev/null
-source ~/.bashrc
-
+source /home/chris/.bashrc
 # Clone the StoryBox repository
 git clone https://github.com/ozfive/StoryBox.git
 
 # Clone the StoryBoxShellScripts repository and execute phatbeat.sh
-cd ~ || exit
+cd /home/chris/ || exit
 git clone https://github.com/ozfive/StoryBoxShellScripts.git
 cd StoryBoxShellScripts || exit
 chmod +x phatbeat.sh
@@ -82,7 +81,7 @@ chmod +x install.sh
 raspi-config nonint do_spi 0
 
 # Build and install libmpdclient
-cd ~/StoryBox/lib/ || exit
+cd /home/chris/StoryBox/lib/ || exit
 git clone https://github.com/MusicPlayerDaemon/libmpdclient.git
 cd libmpdclient || exit
 meson . output
@@ -90,7 +89,7 @@ ninja -C output
 ninja -C output install
 
 # Build and move mpdcurrentsong, mpdplaystate, and mpdtime
-cd ~/StoryBox/lib/ || exit
+cd /home/chris/StoryBox/lib/ || exit
 gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
 mv mpdcurrentsong /usr/local/bin/mpdcurrentsong
 
@@ -101,20 +100,23 @@ gcc -o mpdtime mpdtime.c -lmpdclient
 mv mpdtime /usr/local/bin/mpdtime
 
 # Build and move StoryBox
-mkdir /home/pi/go/
-mkdir /home/pi/go/src
-mkdir /home/pi/go/pkg
-mkdir /home/pi/go/bin
+mkdir /home/chris/go/
+mkdir /home/chris/go/src
+mkdir /home/chris/go/pkg
+mkdir /home/chris/go/bin
 
-cp -r /home/pi/StoryBox /home/pi/go/src
-cd /home/pi/go/src/Storybox/ || exit
+cp -r /home/chris/StoryBox /home/chris/go/src
+cd /home/chris/go/src/StoryBox/ || exit
 
+echo "Building StoryBox binary"
 go build -o StoryBox
 
-mv StoryBox /usr/local/bin/Storybox
+mv StoryBox /usr/local/bin/StoryBox
 
 # Build Startup application in the Startup directory
-cd /home/pi/go/src/Storybox/Startup || exit
+cd /home/chris/go/src/StoryBox/Startup || exit
+
+echo "Building Startup Binary"
 go build -o Startup
 chmod +x Startup
 
@@ -122,14 +124,14 @@ chmod +x Startup
 cp Startup /usr/local/bin
 
 # Copy storyboxstartup.service file to lib/systemd/system/
-cd /home/pi/go/src/Storybox/ || exit
+cd /home/chris/go/src/StoryBox/ || exit
 cp storyboxstartup.service /lib/systemd/system/storyboxstartup.service
 
 # Copy the started.mp3 file to /etc/sound/
-cp /home/pi/go/src/Storybox/Startup/started.mp3 /etc/sound/started.mp3
+cp /home/chris/go/src/StoryBox/Startup/started.mp3 /etc/sound/started.mp3
 
 # Copy the rest of the sound files to /etc/sound/
-cp /home/pi/go/src/Storybox/sys-audio/*.mp3 /etc/sound/
+cp /home/chris/go/src/StoryBox/sys-audio/*.mp3 /etc/sound/
 
 # Set the permissions for the storyboxstartup.service file
 chmod 644 /lib/systemd/system/storyboxstartup.service
@@ -142,3 +144,4 @@ systemctl start storyboxstartup.service
 
 # Reboot the system
 reboot now
+

@@ -1,4 +1,4 @@
-module Storybox
+module StoryBox
 
 go 1.20
 

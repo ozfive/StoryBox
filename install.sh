@@ -78,8 +78,8 @@ tar -C /usr/local -xzf go1.20.5.linux-armv6l.tar.gz
 rm go1.20.5.linux-armv6l.tar.gz
 
 # Set Go environment variables
-echo 'export PATH=$PATH:/usr/local/go/bin' >> /home/chris/.bashrc
-echo 'export GOPATH=$HOME/go' >> /home/chris/.bashrc
+echo "export PATH=$PATH:/usr/local/go/bin" >> /home/chris/.bashrc
+echo "export GOPATH=$HOME/go" >> /home/chris/.bashrc
 
 # shellcheck source=/dev/null
 source /home/chris/.bashrc
@@ -141,7 +141,6 @@ gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
 print_heading 'Building mpdplaystate...'
 gcc -o mpdplaystate mpdplaystate.c -lmpdclient
 
-```bash
 print_heading 'Building mpdtime...'
 gcc -o mpdtime mpdtime.c -lmpdclient
 

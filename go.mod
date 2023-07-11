@@ -6,11 +6,11 @@ require (
 	cloud.google.com/go/texttospeech v1.7.1
 	github.com/adrg/xdg v0.4.0
 	github.com/didip/tollbooth/v6 v6.1.2
-	github.com/iris-contrib/middleware/tollboothic v0.0.0-20230707105915-780f3748d374
+	github.com/iris-contrib/middleware/tollboothic v0.0.0-20230710203825-647388417474
 	github.com/kataras/iris/v12 v12.2.0
 	github.com/mattn/go-sqlite3 v1.14.17
 	github.com/naoina/toml v0.1.1
-	google.golang.org/genproto v0.0.0-20230706204954-ccb25ca9f130
+	google.golang.org/genproto v0.0.0-20230711160842-782d3b101e98
 )
 
 require (
@@ -70,8 +70,8 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/api v0.126.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230629202037-9506855d4529 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230629202037-9506855d4529 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230706204954-ccb25ca9f130 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230706204954-ccb25ca9f130 // indirect
 	google.golang.org/grpc v1.56.2 // indirect
 	google.golang.org/protobuf v1.31.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect

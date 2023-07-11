@@ -55,11 +55,14 @@ touch /home/chris/.mpd/database
 touch /home/chris/.mpd/log
 touch /home/chris/.mpd/pid
 
-mv /home/chris/StoryBox/lib/mpd.conf /home/chris/.mpd/mpd.conf
-
 print_heading 'Installing gTTS library...'
 # Install gTTS library
-pip install gTTS
+if pip show gTTS >/dev/null 2>&1; then
+    echo "gTTS is already installed."
+else
+    echo "Installing gTTS..."
+    pip install gTTS
+fi
 
 print_heading 'Setting up Go environment...'
 # Make all of the directories needed for Go.
@@ -78,8 +81,8 @@ tar -C /usr/local -xzf go1.20.5.linux-armv6l.tar.gz
 rm go1.20.5.linux-armv6l.tar.gz
 
 # Set Go environment variables
-echo "export PATH=$PATH:/usr/local/go/bin" >> /home/chris/.bashrc
-echo "export GOPATH=$HOME/go" >> /home/chris/.bashrc
+echo "export PATH=\$PATH:/usr/local/go/bin" >> /home/chris/.bashrc
+echo "export GOPATH=\$HOME/go" >> /home/chris/.bashrc
 
 # shellcheck source=/dev/null
 source /home/chris/.bashrc
@@ -87,6 +90,8 @@ source /home/chris/.bashrc
 print_heading 'Cloning the StoryBox repository...'
 # Clone the StoryBox repository
 git clone https://github.com/ozfive/StoryBox.git
+
+cp /home/chris/StoryBox/lib/mpd.conf /home/chris/.mpd/mpd.conf
 
 print_heading 'Setting up phatbeat...'
 # Move into /home/chris/ to git clone the StoryBoxShellScripts repo
@@ -118,13 +123,7 @@ raspi-config nonint do_spi 0
 
 print_heading 'Building and installing libmpdclient...'
 # Build and install libmpdclient
-cd /home/chris/StoryBox/lib/ || exit
-
-# Git clone the libmpdclient repo in /home/chris/StoryBox/lib/
-git clone https://github.com/MusicPlayerDaemon/libmpdclient.git
-
-# Move into libmpdclient/
-cd libmpdclient || exit
+cd /home/chris/StoryBox/lib/libmpdclient || exit
 
 # use Meson and Ninja to build and install the libmpdclient
 meson . output
@@ -145,16 +144,16 @@ print_heading 'Building mpdtime...'
 gcc -o mpdtime mpdtime.c -lmpdclient
 
 # Move the binaries to /usr/local/bin/
-mv mpdcurrentsong /usr/local/bin/mpdcurrentsong
-mv mpdplaystate /usr/local/bin/mpdplaystate
-mv mpdtime /usr/local/bin/mpdtime
+cp mpdcurrentsong /usr/local/bin/mpdcurrentsong
+cp mpdplaystate /usr/local/bin/mpdplaystate
+cp mpdtime /usr/local/bin/mpdtime
 
 print_heading 'Building StoryBox binary...'
 # Build StoryBox binary in the Startup directory
-## go build -o /home/chris/go/src/StoryBox/StoryBox || exit
+go build -o /home/chris/go/src/StoryBox/StoryBox || exit
 
 print_heading 'Copying StoryBox binary...'
-## cp /home/chris/go/src/StoryBox/StoryBox /usr/local/bin/StoryBox/ || exit
+cp /home/chris/go/src/StoryBox/StoryBox /usr/local/bin/StoryBox/ || exit
 
 print_heading 'Cloning the StoryBox-Startup repository...'
 cd /home/chris/go/src/ || exit
@@ -163,16 +162,16 @@ cd /home/chris/go/src/ || exit
 git clone https://github.com/ozfive/StoryBox-Startup.git
 
 print_heading 'Building the Startup binary...'
-# Build Startup binary in the StoryBox-Startup directory
-## go build -o /home/chris/go/src/StoryBox-Startup/Startup || exit
+# Build Startup binary in theStoryBox-Startup directory
+go build -o /home/chris/go/src/StoryBox-Startup/Startup || exit
 
 print_heading 'Copying the Startup binary...'
 # Copy the Startup binary to the bin directory to make it available to the system
-## cp /home/chris/go/src/StoryBox-Startup/Startup /usr/local/bin || exit
+cp /home/chris/go/src/StoryBox-Startup/Startup /usr/local/bin || exit
 
 print_heading 'Setting up systemd service...'
 # Copy storyboxstartup.service file to lib/systemd/system/
-cp /home/chris/go/src/StoryBox/storyboxstartup.service /lib/systemd/system/storyboxstartup.service
+cp /home/chris/go/src/StoryBox-Startup/storyboxstartup.service /lib/systemd/system/storyboxstartup.service
 
 # Set the permissions for the storyboxstartup.service file
 chmod 644 /lib/systemd/system/storyboxstartup.service
@@ -181,13 +180,28 @@ chmod 644 /lib/systemd/system/storyboxstartup.service
 systemctl enable storyboxstartup.service
 
 print_heading 'Setting up sound files...'
-mkdir /etc/sound/
 
-# Copy the started.mp3 file to /etc/sound/
-cp /home/chris/go/src/StoryBox-Startup/started.mp3 /etc/sound/started.mp3
+directory="/etc/sound/"
+file="/etc/sound/started.mp3"
+if [ -d "$directory" ]; then
+    echo "Directory exists."
+else
+    echo "Directory does not exist. Creating it."
+    mkdir /etc/sound/
+    if [ -f "$file" ]; then
+      print_warning 'File exists. Skipping...'
+    else
+      print_heading 'File does not exist. Copying it to /etc/sound/'
+
+      # Copy the started.mp3 file to /etc/sound/
+      cp /home/chris/go/src/StoryBox-Startup/started.mp3 /etc/sound/started.mp3
+
+      print_heading 'Copy completed...'
+    fi
+fi
 
 # Copy the rest of the sound files to /etc/sound/
-cp /home/chris/go/src/StoryBox/sys-audio/*.mp3 /etc/sound/
+cp -R /home/chris/go/src/StoryBox/sys-audio/ /etc/sound/
 
 print_success 'Installation completed successfully!'
 

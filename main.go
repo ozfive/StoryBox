@@ -78,7 +78,7 @@ func newApp(debug bool) *iris.Application {
 
 	limiter := tollbooth.NewLimiter(15, nil)
 
-	database, _ := sql.Open("sqlite3", "./rfids.db")
+	database, _ := sql.Open("sqlite3", "rfids.db")
 
 	createDatabaseTable(database)
 

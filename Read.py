@@ -25,9 +25,6 @@ def start_playlist(tag, unique):
         Otherwise, False is returned.
     """
     api_url = f'{api_url_base}rfid/'
-    print(api_url)
-    print(tag)
-    print(unique)
     payload = {'tagid': tag, 'uniqueid': unique}
 
     try:
@@ -46,6 +43,12 @@ try:
     while True:
         # Read RFID tag information
         ids, text = reader.read()
+
+        # Print the RFID tag information
+        print(f'Tag ID: {ids}')
+        print(f'Unique ID: {text}')
+
+        # Start the playlist based on RFID tag information
         playlist_info = start_playlist(ids, text)
 
         if playlist_info is not False:

@@ -2,14 +2,28 @@
 
 import json
 import requests
+import socket
 import RPi.GPIO as GPIO
 from mfrc522 import SimpleMFRC522
 
 # Initialize the RFID reader
 reader = SimpleMFRC522()
 
-# API endpoint URL
-api_url_base = 'http://192.168.1.111:3001/'
+def get_outbound_ip():
+    connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    connection.connect(("8.8.8.8", 80))
+
+    local_ip = connection.getsockname()[0]
+    connection.close()
+
+    return local_ip
+
+
+# Get the outbound IP dynamically
+outbound_ip = get_outbound_ip()
+port = '3001'
+# Construct the API base URL with the dynamic IP
+api_url_base = f"http://{outbound_ip}:{port}/"
 
 # Function to start the playlist based on RFID tag information
 def start_playlist(tag, unique):

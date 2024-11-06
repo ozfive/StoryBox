@@ -38,7 +38,7 @@ git clone git@github.com:[GIT_USER]/StoryBox.git
 4. Access the /home/pi/Storybox/ directory and ensure that install.sh is executable by running these commands in your terminal:
 
 ```shell
-cd Storybox/
+cd Storybox/scripts
 
 chmod +x install.sh
 
@@ -70,7 +70,7 @@ If you see spi_bcm2835, you can proceed.
 
 ## Database configuration
 
-	The project depends on a SQLite3 database named rfids.db.
+	The project depends on a SQLite3 database named 'rfids.db' which is located in the 'StoryBox/db' folder.
 
 ## Who To Contact
 

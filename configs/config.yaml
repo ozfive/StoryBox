@@ -1,0 +1,5 @@
+debug: false
+address: "localhost"
+port: "3001"
+log_file_path: "/var/log/StoryBox/system-errors.log"
+database_path: "./db/rfids.db"

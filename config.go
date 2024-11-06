@@ -12,6 +12,12 @@ type config struct {
 	PollInterval    int
 	ShutdownTimeout int
 	Commands        []string
+
+	Debug        bool   `yaml:"debug"`
+	Address      string `yaml:"address"`
+	Port         string `yaml:"port"`
+	LogFilePath  string `yaml:"log_file_path"`
+	DatabasePath string `yaml:"database_path"`
 	//EmergencyFallback bool
 	//EmergencyInterval int
 }

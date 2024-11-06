@@ -2,12 +2,10 @@ package main
 
 import (
 	"bytes"
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -17,13 +15,11 @@ import (
 	"strconv"
 	"strings"
 
-	tts "cloud.google.com/go/texttospeech/apiv1"
 	"github.com/adrg/xdg"
 	"github.com/didip/tollbooth/v6"
 	"github.com/iris-contrib/middleware/tollboothic"
 	"github.com/kataras/iris/v12"
 	_ "github.com/mattn/go-sqlite3"
-	ttspb "google.golang.org/genproto/googleapis/cloud/texttospeech/v1"
 )
 
 type RFID struct {
@@ -619,6 +615,7 @@ func playCustomMessage(message string) {
 }
 
 // playCustomMessageFromGCloud uses the Google text to speech engine to play a custom message.
+/*
 func playCustomMessageFromGCloud(message string) {
 	// Set the environment variable to the path of your JSON key file
 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "keyfile.json")
@@ -631,25 +628,25 @@ func playCustomMessageFromGCloud(message string) {
 		return
 	}
 	defer client.Close()
+		// texttospeechpb
+		req := &tts.SynthesizeSpeechRequest{
+			Input: &tts.SynthesisInput{
+				InputSource: &tts.SynthesisInput_Text{Text: message},
+			},
+			Voice: &tts.VoiceSelectionParams{
+				LanguageCode: "en-US",
+				SsmlGender:   tts.SsmlVoiceGender_FEMALE,
+			},
+			AudioConfig: &tts.AudioConfig{
+				AudioEncoding: tts.AudioEncoding_MP3,
+			},
+		}
 
-	req := &ttspb.SynthesizeSpeechRequest{
-		Input: &ttspb.SynthesisInput{
-			InputSource: &ttspb.SynthesisInput_Text{Text: message},
-		},
-		Voice: &ttspb.VoiceSelectionParams{
-			LanguageCode: "en-US",
-			SsmlGender:   ttspb.SsmlVoiceGender_FEMALE,
-		},
-		AudioConfig: &ttspb.AudioConfig{
-			AudioEncoding: ttspb.AudioEncoding_MP3,
-		},
-	}
-
-	resp, err := client.SynthesizeSpeech(ctx, req)
-	if err != nil {
-		log.Printf("Failed to synthesize speech: %v", err)
-		return
-	}
+		resp, err := client.SynthesizeSpeech(ctx, req)
+		if err != nil {
+			log.Printf("Failed to synthesize speech: %v", err)
+			return
+		}
 
 	err = ioutil.WriteFile("output.mp3", resp.AudioContent, 0644)
 	if err != nil {
@@ -664,7 +661,7 @@ func playCustomMessageFromGCloud(message string) {
 		log.Printf("Failed to play custom message: %v", err)
 	}
 }
-
+*/
 func ClearPlaylist() error {
 	const (
 		mpcCmd     = "mpc"

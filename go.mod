@@ -1,6 +1,6 @@
 module StoryBox
 
-go 1.20
+go 1.23.2
 
 require (
 	cloud.google.com/go/texttospeech v1.7.1

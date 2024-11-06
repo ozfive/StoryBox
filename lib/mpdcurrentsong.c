@@ -5,7 +5,8 @@
 	    A C99 compliant compiler (e.g. gcc)
     	Meson 0.37 and Ninja
 
-		apt install libmpdclient-dev
+		sudo apt-get update -y
+		sudo apt-get install -y libmpdclient-dev
 		git clone https://github.com/MusicPlayerDaemon/libmpdclient.git
 
 		sudo apt install meson

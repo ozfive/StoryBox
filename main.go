@@ -615,7 +615,7 @@ func playCustomMessage(message string) {
 }
 
 // playCustomMessageFromGCloud uses the Google text to speech engine to play a custom message.
-/*
+/* KEEP THIS!
 func playCustomMessageFromGCloud(message string) {
 	// Set the environment variable to the path of your JSON key file
 	os.Setenv("GOOGLE_APPLICATION_CREDENTIALS", "keyfile.json")

@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/didip/tollbooth/v6"
+	tollbooth "github.com/didip/tollbooth/v6/limiter"
 	"github.com/iris-contrib/middleware/tollboothic"
 	"github.com/kataras/iris/v12"
 

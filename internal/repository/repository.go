@@ -4,20 +4,17 @@ import (
 	"StoryBox/internal/models"
 	"database/sql"
 	"fmt"
-	// "StoryBox/internal/models"
 )
 
 type RFIDRepository interface {
 	Create(rfid *models.RFID) error
 	GetByTagAndUniqueID(tagID, uniqueID string) (*models.RFID, error)
-	// Add other necessary methods
 }
 
 type PlaylistRepository interface {
 	Create(url, playlistName string) error
 	Delete(url, playlistName string) error
 	Get(url, playlistName string) (*models.Playlist, error)
-	// Add other necessary methods
 }
 
 type repository struct {

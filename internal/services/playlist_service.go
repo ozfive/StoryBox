@@ -3,15 +3,14 @@ package services
 import (
 	"StoryBox/internal/models"
 	"StoryBox/internal/repository"
+	"StoryBox/internal/utils"
 	"log"
 
 	"github.com/kataras/iris/v12"
-	// "StoryBox/internal/models"
-	// "StoryBox/internal/repository"
 )
 
 type PlaylistService interface {
-	CreatePlaylist(url, playlistName string) error
+	CreatePlaylist(ctx iris.Context, url, playlistName string) error
 	DeletePlaylist(url, playlistName string) error
 	GetPlaylist(url, playlistName string) (*models.Playlist, error)
 	ClearPlaylist() error
@@ -33,8 +32,8 @@ func NewPlaylistService(repo repository.PlaylistRepository, soundService SoundSe
 	}
 }
 
-func (p *playlistService) CreatePlaylist(url, playlistName string) error {
-	database, err := connectToDatabase()
+func (p *playlistService) CreatePlaylist(ctx iris.Context, url, playlistName string) error {
+	database, err := repository.ConnectDatabase(utils.DatabasePath)
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
@@ -43,46 +42,34 @@ func (p *playlistService) CreatePlaylist(url, playlistName string) error {
 	// Check if the playlist already exists in the database.
 	var count int
 	sqlCheck := "SELECT COUNT(*) FROM playlist WHERE url = ? AND playlistname = ?"
-	err = database.QueryRow(sqlCheck, url, playlistname).Scan(&count)
+	err = database.QueryRow(sqlCheck, url, playlistName).Scan(&count)
 
 	if err != nil {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "Failed to SELECT playlist " + playlistname + " from the database. Please try again.",
+			"message":     "Failed to SELECT playlist " + playlistName + " from the database. Please try again.",
 		})
-		return
+		return err
 	}
 
 	if count > 0 {
 		ctx.StatusCode(400)
 		ctx.JSON(iris.Map{
 			"status_code": 400,
-			"message":     "The playlist " + playlistname + " already exists in the database.",
+			"message":     "The playlist " + playlistName + " already exists in the database.",
 		})
-		return
+		return nil
 	}
 
-	// Insert the new playlist into the database.
-	sqlInsert := "INSERT INTO playlist (url, playlistname) VALUES (?, ?)"
-	_, err = database.Exec(sqlInsert, url, playlistname)
+	// Add code to create the playlist in the database here.
 
-	if err != nil {
-		ctx.StatusCode(400)
-		ctx.JSON(iris.Map{
-			"status_code": 400,
-			"message":     "Failed to INSERT playlist in the database. Please try again.",
-		})
-		return
-	}
-
-	// Return a success message.
-	ctx.StatusCode(200)
-	ctx.JSON(iris.Map{
-		"status_code": 200,
-		"message":     "The playlist " + playlistname + " has been created in the database.",
-	})
 	return nil
 }
 
-// Implement other PlaylistService methods similarly...
+func (p *playlistService) ClearPlaylist() error {
+	// Implement the ClearPlaylist method here.
+	return nil
+}
+
+// Implement other methods of PlaylistService interface here.

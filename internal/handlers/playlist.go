@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/didip/tollbooth/v6"
+	tollbooth "github.com/didip/tollbooth/v6/limiter"
 	"github.com/iris-contrib/middleware/tollboothic"
 	"github.com/kataras/iris/v12"
 
@@ -43,7 +43,7 @@ func createPlaylistHandler(playlistService services.PlaylistService) iris.Handle
 			return
 		}
 
-		if err := playlistService.CreatePlaylist(payload.URL, payload.PlaylistName); err != nil {
+		if err := playlistService.CreatePlaylist(ctx, payload.URL, payload.PlaylistName); err != nil {
 			ctx.StatusCode(http.StatusInternalServerError)
 			ctx.JSON(iris.Map{
 				"status_code": 500,

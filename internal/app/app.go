@@ -2,8 +2,9 @@ package app
 
 import (
 	"log"
+	"time"
 
-	"github.com/didip/tollbooth/v6"
+	"github.com/didip/tollbooth/v6/limiter"
 	"github.com/kataras/iris/v12"
 	_ "github.com/mattn/go-sqlite3"
 
@@ -23,8 +24,15 @@ type Config struct {
 func NewApp(config *Config) *iris.Application {
 	app := iris.New()
 
+	// Set Expirable Options for Rate Limiter
+	// newLimiter := limiter.New(&limiter.ExpirableOptions{
+	// 	DefaultExpirationTTL: time.Minute,
+	// 	MaxExpire:            1000,
+	// })
+
 	// Rate Limiter
-	limiter := tollbooth.NewLimiter(15, nil)
+	newLimiter := *limiter.New(&limiter.ExpirableOptions{
+		DefaultExpirationTTL: time.Minute})
 
 	// Connect to Database
 	db, err := repository.ConnectDatabase(config.DatabasePath)
@@ -41,8 +49,8 @@ func NewApp(config *Config) *iris.Application {
 	playlistService := services.NewPlaylistService(playlistRepo, soundService)
 
 	// Initialize Handlers
-	handlers.InitRFIDHandlers(app, rfidRepo, soundService, playlistService, limiter)
-	handlers.InitPlaylistHandlers(app, playlistService, limiter)
+	handlers.InitRFIDHandlers(app, rfidRepo, soundService, playlistService, &newLimiter) // Pass the correct limiter type
+	handlers.InitPlaylistHandlers(app, playlistService, &newLimiter)
 	handlers.InitStatsHandlers(app, soundService)
 
 	return app

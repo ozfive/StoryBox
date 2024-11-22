@@ -4,11 +4,13 @@ import (
 	"StoryBox/internal/app"
 	"StoryBox/internal/utils"
 	"log"
+
+	"github.com/kataras/iris/v12"
 )
 
 func main() {
 	// Load configuration
-	config, err := utils.LoadConfig("configs/config.yaml")
+	config, err := utils.LoadConfiguration("config/config.yaml")
 	if err != nil {
 		log.Fatalf("Failed to load configuration: %v", err)
 	}
@@ -21,7 +23,11 @@ func main() {
 
 	// Initialize and run the application
 	api := app.NewApp(config)
-	if err := api.Run(); err != nil {
+
+	runAddress := iris.Addr(config.Address + ":" + config.Port)
+
+	// Run the application
+	if err := api.Run(runAddress); err != nil {
 		log.Fatalf("Application failed to run: %v", err)
 	}
 }

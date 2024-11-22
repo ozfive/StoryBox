@@ -14,7 +14,7 @@ type Config struct {
 	DatabasePath string `yaml:"database_path"`
 }
 
-func LoadConfig(path string) (*Config, error) {
+func LoadConfiguration(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

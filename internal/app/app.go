@@ -11,17 +11,10 @@ import (
 	"StoryBox/internal/handlers"
 	"StoryBox/internal/repository"
 	"StoryBox/internal/services"
+	"StoryBox/internal/utils"
 )
 
-type Config struct {
-	Debug        bool
-	Address      string
-	Port         string
-	LogFilePath  string
-	DatabasePath string
-}
-
-func NewApp(config *Config) *iris.Application {
+func NewApp(config *utils.Config) *iris.Application {
 	app := iris.New()
 
 	// Set Expirable Options for Rate Limiter

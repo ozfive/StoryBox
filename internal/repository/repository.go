@@ -39,6 +39,10 @@ func ConnectDatabase(databasePath string) (*sql.DB, error) {
 		return nil, fmt.Errorf("unable to open SQLite database: %w", err)
 	}
 
+	// Set connection pool size
+	db.SetMaxOpenConns(10) // maximum number of open connections
+	db.SetMaxIdleConns(5)  // maximum number of idle connections
+
 	if err := db.Ping(); err != nil {
 		db.Close()
 		return nil, fmt.Errorf("unable to connect to SQLite database: %w", err)
@@ -55,20 +59,20 @@ func ConnectDatabase(databasePath string) (*sql.DB, error) {
 
 func initializeTables(db *sql.DB) error {
 	rfidTable := `
-    CREATE TABLE IF NOT EXISTS rfid (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tagid TEXT,
-        uniqueid TEXT,
-        url TEXT,
-        playlistname TEXT
-    );`
+	CREATE TABLE IF NOT EXISTS rfid (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		tagid        TEXT,
+		uniqueid     TEXT,
+		url          TEXT,
+		playlistname TEXT
+	);`
 
 	playlistTable := `
-    CREATE TABLE IF NOT EXISTS playlist (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        url TEXT,
-        playlistname TEXT
-    );`
+	CREATE TABLE IF NOT EXISTS playlist (
+		id           INTEGER PRIMARY KEY AUTOINCREMENT,
+		url          TEXT,
+		playlistname TEXT
+	);`
 
 	_, err := db.Exec(rfidTable)
 	if err != nil {

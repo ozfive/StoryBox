@@ -31,6 +31,7 @@ func currentStatsHandler(soundService services.SoundService) iris.Handler {
 		cmd := exec.Command("./mpdcurrentsong")
 		output, err := cmd.Output()
 		if err != nil {
+			soundService.PlayErrorNotification()
 			ctx.StatusCode(500)
 			ctx.JSON(iris.Map{
 				"status_code": 500,
@@ -41,6 +42,7 @@ func currentStatsHandler(soundService services.SoundService) iris.Handler {
 		}
 
 		data := parseKeyValueOutput(string(output))
+		soundService.PlayReadyNotification()
 		ctx.JSON(iris.Map{
 			"status_code": 200,
 			"message":     "Current Stats",
@@ -54,6 +56,7 @@ func stopCurrentPlaylistHandler(soundService services.SoundService) iris.Handler
 		cmd := exec.Command("mpc", "stop")
 		err := cmd.Run()
 		if err != nil {
+			soundService.PlayErrorNotification()
 			ctx.StatusCode(500)
 			ctx.JSON(iris.Map{
 				"status_code": 500,
@@ -63,6 +66,7 @@ func stopCurrentPlaylistHandler(soundService services.SoundService) iris.Handler
 			return
 		}
 
+		soundService.PlayAcknowledgeNotification()
 		ctx.JSON(iris.Map{
 			"status_code": 200,
 			"message":     "Playlist stopped.",
@@ -76,6 +80,7 @@ func playlistElapsedTimeHandler(soundService services.SoundService) iris.Handler
 		cmd := exec.Command("./mpdtime")
 		output, err := cmd.Output()
 		if err != nil {
+			soundService.PlayErrorNotification()
 			ctx.StatusCode(500)
 			ctx.JSON(iris.Map{
 				"status_code": 500,
@@ -86,6 +91,7 @@ func playlistElapsedTimeHandler(soundService services.SoundService) iris.Handler
 		}
 
 		elapsedTime := strings.TrimSpace(string(output))
+		soundService.PlayReadyNotification()
 		ctx.JSON(iris.Map{
 			"status_code": 200,
 			"message":     "Elapsed Time",

@@ -62,7 +62,7 @@ func rfidHandler(rfidRepo repository.RFIDRepository, soundService services.Sound
 
 			// Play notification and manage playlist
 			soundService.PlayAcknowledgeNotification()
-			playlistService.ClearPlaylist()
+			playlistService.ClearPlaylist(existingRFID.PlaylistName)
 			playlistService.LoadPlaylist(existingRFID.PlaylistName)
 			playlistService.PlayPlaylist(existingRFID.PlaylistName)
 		} else {

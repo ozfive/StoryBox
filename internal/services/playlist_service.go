@@ -3,7 +3,6 @@ package services
 import (
 	"StoryBox/internal/models"
 	"StoryBox/internal/repository"
-	"StoryBox/internal/utils"
 	"log"
 
 	"github.com/kataras/iris/v12"
@@ -33,7 +32,7 @@ func NewPlaylistService(repo repository.PlaylistRepository, soundService SoundSe
 }
 
 func (p *playlistService) CreatePlaylist(ctx iris.Context, url, playlistName string) error {
-	database, err := repository.ConnectDatabase(utils.DatabasePath)
+	database, err := repository.ConnectDatabase("/path/to/your/database.db")
 	if err != nil {
 		log.Fatalf("Failed to connect to the database: %v", err)
 	}
@@ -68,8 +67,36 @@ func (p *playlistService) CreatePlaylist(ctx iris.Context, url, playlistName str
 }
 
 func (p *playlistService) ClearPlaylist() error {
-	// Implement the ClearPlaylist method here.
+	// TODO: Implement the ClearPlaylist method here.
 	return nil
 }
 
-// Implement other methods of PlaylistService interface here.
+func (p *playlistService) DeletePlaylist(url, playlistName string) error {
+	// TODO: Implement the DeletePlaylist method here.
+	return nil
+}
+
+func (p *playlistService) GetPlaylist(url, playlistName string) (*models.Playlist, error) {
+	// TODO: Implement the GetPlaylist method here.
+	return nil, nil
+}
+
+func (p *playlistService) LoadPlaylist(playlistName string) error {
+	// TODO: Implement the LoadPlaylist method here.
+	return nil
+}
+
+func (p *playlistService) PausePlaylist(playlistName string) error {
+	// TODO: Implement the PausePlaylist functionality here.
+	return nil
+}
+
+func (p *playlistService) PlayPlaylist(playlistName string) error {
+	// TODO: Implement the PlayPlaylist functionality here.
+	return nil
+}
+
+func (p *playlistService) StopPlaylist() error {
+	// TODO: Implement the StopPlaylist functionality here.
+	return nil
+}

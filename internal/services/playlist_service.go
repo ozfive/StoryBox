@@ -3,7 +3,6 @@ package services
 import (
 	"StoryBox/internal/models"
 	"StoryBox/internal/repository"
-	"log"
 
 	"github.com/kataras/iris/v12"
 )
@@ -32,36 +31,22 @@ func NewPlaylistService(repo repository.PlaylistRepository, soundService SoundSe
 }
 
 func (p *playlistService) CreatePlaylist(ctx iris.Context, url, playlistName string) error {
-	database, err := repository.ConnectDatabase("/path/to/your/database.db")
+	err := p.repo.Create(url, playlistName)
 	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
-	}
-	defer database.Close()
-
-	// Check if the playlist already exists in the database.
-	var count int
-	sqlCheck := "SELECT COUNT(*) FROM playlist WHERE url = ? AND playlistname = ?"
-	err = database.QueryRow(sqlCheck, url, playlistName).Scan(&count)
-
-	if err != nil {
-		ctx.StatusCode(400)
+		ctx.StatusCode(500)
 		ctx.JSON(iris.Map{
-			"status_code": 400,
-			"message":     "Failed to SELECT playlist " + playlistName + " from the database. Please try again.",
+			"status_code": 500,
+			"message":     "Failed to create playlist.",
+			"data":        err.Error(),
 		})
 		return err
 	}
 
-	if count > 0 {
-		ctx.StatusCode(400)
-		ctx.JSON(iris.Map{
-			"status_code": 400,
-			"message":     "The playlist " + playlistName + " already exists in the database.",
-		})
-		return nil
-	}
-
-	// Add code to create the playlist in the database here.
+	ctx.StatusCode(200)
+	ctx.JSON(iris.Map{
+		"status_code": 200,
+		"message":     "The playlist has been created successfully.",
+	})
 
 	return nil
 }

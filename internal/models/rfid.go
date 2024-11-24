@@ -12,4 +12,6 @@ type Playlist struct {
 	ID             int
 	URLFromDB      string
 	PlaylistNameDB string
+	PlaylistName   string
+	URL            string
 }

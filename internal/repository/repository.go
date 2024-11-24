@@ -17,16 +17,20 @@ type PlaylistRepository interface {
 	Get(url, playlistName string) (*models.Playlist, error)
 }
 
-type repository struct {
+type rfidRepository struct {
+	db *sql.DB
+}
+
+type playlistRepository struct {
 	db *sql.DB
 }
 
 func NewRFIDRepository(db *sql.DB) RFIDRepository {
-	return &repository{db: db}
+	return &rfidRepository{db: db}
 }
 
 func NewPlaylistRepository(db *sql.DB) PlaylistRepository {
-	return &repository{db: db}
+	return &playlistRepository{db: db}
 }
 
 func ConnectDatabase(databasePath string) (*sql.DB, error) {
@@ -80,7 +84,7 @@ func initializeTables(db *sql.DB) error {
 }
 
 // Implement RFIDRepository methods
-func (r *repository) Create(rfid *models.RFID) error {
+func (r *rfidRepository) Create(rfid *models.RFID) error {
 	stmt, err := r.db.Prepare("INSERT INTO rfid (tagid, uniqueid, url, playlistname) VALUES (?, ?, ?, ?);")
 	if err != nil {
 		return err
@@ -92,16 +96,14 @@ func (r *repository) Create(rfid *models.RFID) error {
 		return err
 	}
 
-	id, err := res.LastInsertId()
-	if err != nil {
+	if _, err := res.LastInsertId(); err != nil {
 		return err
 	}
 
-	rfid.ID = int(id)
 	return nil
 }
 
-func (r *repository) GetByTagAndUniqueID(tagID, uniqueID string) (*models.RFID, error) {
+func (r *rfidRepository) GetByTagAndUniqueID(tagID, uniqueID string) (*models.RFID, error) {
 	stmt, err := r.db.Prepare("SELECT id, tagid, uniqueid, url, playlistname FROM rfid WHERE tagid = ? AND uniqueid = ?;")
 	if err != nil {
 		return nil, err
@@ -117,4 +119,49 @@ func (r *repository) GetByTagAndUniqueID(tagID, uniqueID string) (*models.RFID, 
 	return rfid, nil
 }
 
-// Implement PlaylistRepository methods similarly...
+// Implement PlaylistRepository methods
+func (p *playlistRepository) Create(url, playlistName string) error {
+	stmt, err := p.db.Prepare("INSERT INTO playlist (url, playlistname) VALUES (?, ?);")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(url, playlistName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *playlistRepository) Delete(url, playlistName string) error {
+	stmt, err := p.db.Prepare("DELETE FROM playlist WHERE url = ? AND playlistname = ?;")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(url, playlistName)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *playlistRepository) Get(url, playlistName string) (*models.Playlist, error) {
+	stmt, err := p.db.Prepare("SELECT id, url, playlistname FROM playlist WHERE url = ? AND playlistname = ?;")
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	playlist := &models.Playlist{}
+	err = stmt.QueryRow(url, playlistName).Scan(&playlist.ID, &playlist.URL, &playlist.PlaylistName)
+	if err != nil {
+		return nil, err
+	}
+
+	return playlist, nil
+}

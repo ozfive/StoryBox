@@ -11,7 +11,7 @@ type PlaylistService interface {
 	CreatePlaylist(ctx iris.Context, url, playlistName string) error
 	DeletePlaylist(url, playlistName string) error
 	GetPlaylist(url, playlistName string) (*models.Playlist, error)
-	ClearPlaylist() error
+	ClearPlaylist(playlistName string) error
 	LoadPlaylist(playlistName string) error
 	PlayPlaylist(playlistName string) error
 	PausePlaylist(playlistName string) error
@@ -51,37 +51,30 @@ func (p *playlistService) CreatePlaylist(ctx iris.Context, url, playlistName str
 	return nil
 }
 
-func (p *playlistService) ClearPlaylist() error {
-	// TODO: Implement the ClearPlaylist method here.
-	return nil
+func (p *playlistService) ClearPlaylist(playlistName string) error {
+	return p.repo.Clear(playlistName)
 }
 
 func (p *playlistService) DeletePlaylist(url, playlistName string) error {
-	// TODO: Implement the DeletePlaylist method here.
-	return nil
+	return p.repo.Delete(url, playlistName)
 }
 
 func (p *playlistService) GetPlaylist(url, playlistName string) (*models.Playlist, error) {
-	// TODO: Implement the GetPlaylist method here.
-	return nil, nil
+	return p.repo.Get(url, playlistName)
 }
 
 func (p *playlistService) LoadPlaylist(playlistName string) error {
-	// TODO: Implement the LoadPlaylist method here.
-	return nil
+	return p.repo.Load(playlistName)
 }
 
 func (p *playlistService) PausePlaylist(playlistName string) error {
-	// TODO: Implement the PausePlaylist functionality here.
-	return nil
+	return p.repo.Pause(playlistName)
 }
 
 func (p *playlistService) PlayPlaylist(playlistName string) error {
-	// TODO: Implement the PlayPlaylist functionality here.
-	return nil
+	return p.repo.Play(playlistName)
 }
 
 func (p *playlistService) StopPlaylist() error {
-	// TODO: Implement the StopPlaylist functionality here.
-	return nil
+	return p.repo.Stop()
 }

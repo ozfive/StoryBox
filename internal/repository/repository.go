@@ -15,6 +15,11 @@ type PlaylistRepository interface {
 	Create(url, playlistName string) error
 	Delete(url, playlistName string) error
 	Get(url, playlistName string) (*models.Playlist, error)
+	Clear(playlistName string) error
+	Load(playlistName string) error
+	Pause(playlistName string) error
+	Play(playlistName string) error
+	Stop() error
 }
 
 type rfidRepository struct {
@@ -168,4 +173,65 @@ func (p *playlistRepository) Get(url, playlistName string) (*models.Playlist, er
 	}
 
 	return playlist, nil
+}
+
+// Implement additional PlaylistRepository methods
+func (p *playlistRepository) Clear(playlistName string) error {
+	stmt, err := p.db.Prepare("DELETE FROM playlist_items WHERE playlistname = ?;")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(playlistName)
+	return err
+}
+
+func (p *playlistRepository) Load(playlistName string) error {
+	// Implementation for loading a playlist
+	// Example: Mark playlist as loaded in the database
+	stmt, err := p.db.Prepare("UPDATE playlist SET status = 'loaded' WHERE playlistname = ?;")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(playlistName)
+	return err
+}
+
+func (p *playlistRepository) Pause(playlistName string) error {
+	// Implementation for pausing a playlist
+	stmt, err := p.db.Prepare("UPDATE playlist SET status = 'paused' WHERE playlistname = ?;")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(playlistName)
+	return err
+}
+
+func (p *playlistRepository) Play(playlistName string) error {
+	// Implementation for playing a playlist
+	stmt, err := p.db.Prepare("UPDATE playlist SET status = 'playing' WHERE playlistname = ?;")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(playlistName)
+	return err
+}
+
+func (p *playlistRepository) Stop() error {
+	// Implementation for stopping all playlists
+	stmt, err := p.db.Prepare("UPDATE playlist SET status = 'stopped';")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec()
+	return err
 }

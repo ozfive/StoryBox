@@ -39,10 +39,10 @@ sudo apt install -y git wget curl
 ```
 
 ### 2. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal:
-
+Ensure that you replace [YOUR_GITHUB_USERNAME] with the username of the fork you are cloning. If using the base repo just replace with "ozfive".
 ```shell
 cd /home/pi
-git clone git@github.com:ozfive/StoryBox.git
+git clone git@github.com:[YOUR_GITHUB_USERNAME]/StoryBox.git
 ```
 
 ### 3. Access the /home/pi/Storybox/ directory and ensure that install.sh is executable by running these commands in your terminal:

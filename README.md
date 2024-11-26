@@ -65,7 +65,7 @@ If you see spi_bcm2835, you can proceed.
 	
 ## Dependencies
 
-	Go 1.19.2 or later
+	Go 1.23.3 or later
 	libmpdclient-dev
 	gcc
 	meson

@@ -37,6 +37,10 @@
 #include <mpd/message.h>
 #include <stdio.h>
 
+#define MPD_HOST "localhost"
+#define MPD_PORT 0
+#define MPD_PASSWORD "yL25v21jRJGMOz6P3F"
+
 static int
 handle_error(struct mpd_connection *c)
 {
@@ -68,9 +72,9 @@ int main(void)
 	struct mpd_status *status;
 	enum mpd_state state;
 
-	conn = mpd_connection_new("localhost", 0, 0);
+	conn = mpd_connection_new(MPD_HOST, MPD_PORT, 0);
 
-	mpd_run_password(conn, "yL25v21jRJGMOz6P3F");
+	mpd_run_password(conn, MPD_PASSWORD);
 
 	status = mpd_run_status(conn);
 

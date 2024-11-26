@@ -13,29 +13,39 @@ The hardware installation shell scripts reside in a separate repository: [StoryB
 ## Gallery
 Below are images of the development hardware assembled for this project:
 
-<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg" alt=“Box-Front” width="415px" height="311">
+<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Front.jpg" alt="Box-Front" width="415px" height="311">
 
-<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt=“Box-Internal” width="500" height="375">
+<img src="https://github.com/ozfive/StoryBox/blob/main/github/Box-Internal.jpg" alt="Box-Internal" width="500" height="375">
 
 ## Setup Guide
 
 To set up the project on your Raspberry Pi Zero, please follow these steps:
 
-1. Fork the repository.
-2. Install git on your Raspberry Pi Zero by executing this command in your terminal:
+### 1. Prepare Your Raspberry Pi
 
+Update and Upgrade the System
+
+Open a terminal and run:
 ```shell
-sudo apt install git
+sudo apt update
+sudo apt upgrade -y
 ```
 
-3. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal. Please make sure to replace `[GIT_USER]` with your own git username.:
+Install Essential Tools
+Ensure you have git, wget, and curl installed:
+
+```shell
+sudo apt install -y git wget curl
+```
+
+### 2. Clone your fork into the directory /home/pi/ by executing the following commands in your terminal:
 
 ```shell
 cd /home/pi
-git clone git@github.com:[GIT_USER]/StoryBox.git
+git clone git@github.com:ozfive/StoryBox.git
 ```
 
-4. Access the /home/pi/Storybox/ directory and ensure that install.sh is executable by running these commands in your terminal:
+### 3. Access the /home/pi/Storybox/ directory and ensure that install.sh is executable by running these commands in your terminal:
 
 ```shell
 cd Storybox/scripts
@@ -45,7 +55,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-5. After your Raspberry Pi Zero reboots, run this command to verify that the SPI interface is enabled:
+### 4. After your Raspberry Pi Zero reboots, run this command to verify that the SPI interface is enabled:
 
 ```shell
 lsmod | grep spi

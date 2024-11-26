@@ -55,11 +55,10 @@ apt install -y \
   mpd \
   mpg123 \
   libasound2-dev \
-  git
 
 # Prepare the directory structure for MPD
 print_heading 'Setting up MPD directories...'
-base_dir="/home/chris"
+base_dir="/home/pi"
 mpd_dir="$base_dir/.mpd"
 music_dir="$base_dir/music"
 playlists_dir="$mpd_dir/playlists"

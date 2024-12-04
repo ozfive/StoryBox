@@ -1,0 +1,49 @@
+# build.ninja
+
+# Variables
+cc = gcc
+cflags = -I/usr/include/mpd -I./include -O2 -Wall -Wextra
+ldflags = -lmpdclient
+
+# Rules
+rule compile
+  command = $cc $cflags -c $in -o $out
+  description = Compiling $in
+
+rule link
+  command = $cc $in $ldflags -o $out
+  description = Linking $out
+
+rule archive
+  command = ar rcs $out $in
+  description = Creating static library $out
+
+rule install
+  command = install -Dm755 $in $out
+  description = Installing $in to $out
+
+# Build targets for executables
+build mpdcurrentsong.o: compile mpdcurrentsong.c
+build mpdplaystate.o: compile mpdplaystate.c
+build mpdtime.o: compile mpdtime.c
+
+build mpdcurrentsong: link mpdcurrentsong.o
+build mpdplaystate: link mpdplaystate.o
+build mpdtime: link mpdtime.o
+
+# Build target for static library
+build mpdplaylistcontrol.o: compile mpdplaylistcontrol.c
+build libmpdplaylistcontrol.a: archive mpdplaylistcontrol.o
+
+# Install executables
+build install_mpdcurrentsong: install mpdcurrentsong /usr/local/bin/mpdcurrentsong
+build install_mpdplaystate: install mpdplaystate /usr/local/bin/mpdplaystate
+build install_mpdtime: install mpdtime /usr/local/bin/mpdtime
+
+# Default target
+default all
+
+# Phony targets
+build all: phony mpdcurrentsong mpdplaystate mpdtime libmpdplaylistcontrol.a
+
+build install: phony install_mpdcurrentsong install_mpdplaystate install_mpdtime

@@ -1,8 +1,12 @@
 #!/bin/bash
+
 # file: install.sh
 #
-# This script will install the required packages/scripts
-# for a working StoryBox system.
+# This script installs all required packages, builds C and Go components,
+# and sets up the StoryBox system.
+
+# Exit immediately if a command exits with a non-zero status
+set -e
 
 # Color codes for fancy output
 RED='\033[0;31m'
@@ -30,16 +34,15 @@ print_warning() {
   printf "${YELLOW}%s${NC}\n" "$1"
 }
 
-# Check if sudo is used
+# Ensure the script is run as root
 if [ "$(id -u)" != 0 ]; then
-  print_error 'Sorry, you need to run this script with sudo'
+  print_error 'Sudo is required for this script to run. Exiting...'
   exit 1
 fi
 
 # Update and upgrade the system
 print_heading 'Updating system...'
-apt update
-apt upgrade -y
+apt update && apt upgrade -y
 
 # Install required packages
 print_heading 'Installing required packages...'
@@ -55,73 +58,77 @@ apt install -y \
   mpd \
   mpg123 \
   libasound2-dev \
-
-# Prepare the directory structure for MPD
-print_heading 'Setting up MPD directories...'
-base_dir="/home/pi"
-mpd_dir="$base_dir/.mpd"
-music_dir="$base_dir/music"
-playlists_dir="$mpd_dir/playlists"
-
-mkdir -p "$mpd_dir"
-mkdir -p "$music_dir"
-mkdir -p "$playlists_dir"
-
-touch "$mpd_dir/database"
-touch "$mpd_dir/log"
-touch "$mpd_dir/pid"
+  git \
+  wget \
+  unzip \
+  raspi-config \
+  i2c-tools
 
 # Install gTTS library
 print_heading 'Installing gTTS library...'
-if pip show gTTS >/dev/null 2>&1; then
+if pip3 show gTTS >/dev/null 2>&1; then
     echo "gTTS is already installed."
 else
     echo "Installing gTTS..."
-    pip install gTTS
+    pip3 install gTTS
 fi
+
+### 
+### Modify repo_owner to your GitHub username 
+### if you want to use your own repository.
+### 
+repo_owner="ozfive"
 
 # Set up Go environment
 print_heading 'Setting up Go environment...'
+base_dir="/home/pi"
 go_base_dir="$base_dir/go"
 go_src_dir="$go_base_dir/src"
 go_pkg_dir="$go_base_dir/pkg"
 go_bin_dir="$go_base_dir/bin"
 
-mkdir -p "$go_src_dir"
-mkdir -p "$go_pkg_dir"
-mkdir -p "$go_bin_dir"
+mkdir -p "$go_src_dir" "$go_pkg_dir" "$go_bin_dir"
 
 # Download and install Go
 print_heading 'Downloading and installing Go...'
-go_tar_url="https://go.dev/dl/go1.20.5.linux-armv6l.tar.gz"
+go_version="1.23.3"
+go_tarball="go${go_version}.linux-armv6l.tar.gz"
+go_tar_url="https://go.dev/dl/$go_tarball"
+wget "$go_tar_url" -P /tmp
+tar -C /usr/local -xzf /tmp/$go_tarball
+rm /tmp/$go_tarball
 
-wget "$go_tar_url" && \
-tar -C /usr/local -xzf go1.20.5.linux-armv6l.tar.gz && \
-rm go1.20.5.linux-armv6l.tar.gz
-
-echo "export PATH=\$PATH:/usr/local/go/bin" >> "$base_dir/.bashrc"
+echo "export PATH=\$PATH:/usr/local/go/bin:/home/pi/go/bin" >> "$base_dir/.bashrc"
 echo "export GOPATH=\$HOME/go" >> "$base_dir/.bashrc"
 source "$base_dir/.bashrc"
 
 # Clone the StoryBox repository
 print_heading 'Cloning the StoryBox repository...'
-storybox_repo="https://github.com/ozfive/StoryBox.git"
+storybox_repo="https://github.com/$repo_owner/StoryBox.git"
+git clone "$storybox_repo" "$go_src_dir/StoryBox"
 
-git clone "$storybox_repo"
-cp "$base_dir/StoryBox/lib/mpd.conf" "$mpd_dir/mpd.conf"
+# Setup .mpd directory
+print_heading 'Setting up .mpd directory...'
+mkdir -p "$base_dir/.mpd/playlists"
+touch "$base_dir/.mpd/database"
+touch "$base_dir/.mpd/log"
+touch "$base_dir/.mpd/pid"
+touch "$base_dir/.mpd/state"
+
+# Copy MPD configuration
+cp "$go_src_dir/StoryBox/lib/mpd.conf" "$base_dir/.mpd/mpd.conf"
 
 # Set up phatbeat
 print_heading 'Setting up phatbeat...'
-cd "$base_dir" && \
-shell_scripts_repo="https://github.com/ozfive/StoryBoxShellScripts.git" && \
-git clone "$shell_scripts_repo" && \
-cd StoryBoxShellScripts && \
-chmod +x phatbeat.sh && \
+shell_scripts_repo="https://github.com/$repo_owner/StoryBoxShellScripts.git"
+git clone "$shell_scripts_repo" "$go_src_dir/StoryBoxShellScripts"
+cd "$go_src_dir/StoryBoxShellScripts"
+chmod +x phatbeat.sh
 ./phatbeat.sh
 
 # Install Wi-Fi configuration for wittypi3mini
 print_heading 'Installing Wi-Fi configuration for wittypi3mini...'
-witty_install_script="$base_dir/StoryBoxShellScripts/wittypi3mini/install.sh"
+witty_install_script="$go_src_dir/StoryBoxShellScripts/wittypi3mini/install.sh"
 
 if [ -x "$witty_install_script" ]; then
   "$witty_install_script"
@@ -135,64 +142,69 @@ raspi-config nonint do_spi 0
 
 # Build and install libmpdclient
 print_heading 'Building and installing libmpdclient...'
-libmpdclient_dir="$base_dir/StoryBox/lib/libmpdclient"
+mpd_lib_dir="$go_src_dir/StoryBox/lib/libmpdclient"
+cd "$mpd_lib_dir"
+meson setup build
+ninja -C build
+ninja -C build install
 
-cd "$libmpdclient_dir" && \
-meson . output && \
-ninja -C output && \
-ninja -C output install
+# Build and install libmpdplaylistcontrol
+print_heading 'Building and installing libmpdplaylistcontrol...'
+libmpdplaylistcontrol_dir="$go_src_dir/StoryBox/lib/mpdplaylistcontrol"
+cd "$libmpdplaylistcontrol_dir"
+gcc -c mpdplaylistcontrol.c -o mpdplaylistcontrol.o
+ar rcs libmpdplaylistcontrol.a mpdplaylistcontrol.o
+cp libmpdplaylistcontrol.a /usr/local/lib/
+ldconfig
 
 # Build mpdcurrentsong
 print_heading 'Building mpdcurrentsong...'
-mpdcurrentsong_dir="$base_dir/StoryBox/lib"
-
-cd "$mpdcurrentsong_dir" && \
+mpdcurrentsong_dir="$go_src_dir/StoryBox/lib"
+cd "$mpdcurrentsong_dir"
 gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
 
 # Build mpdplaystate
 print_heading 'Building mpdplaystate...'
-gcc -o mpdplaystate "$mpdcurrentsong_dir/mpdplaystate.c" -lmpdclient
+gcc -o mpdplaystate mpdplaystate.c -lmpdclient
 
 # Build mpdtime
 print_heading 'Building mpdtime...'
-gcc -o mpdtime "$mpdcurrentsong_dir/mpdtime.c" -lmpdclient
+gcc -o mpdtime mpdtime.c -lmpdclient
 
 # Move the binaries to /usr/local/bin/
 print_heading 'Moving binaries...'
-cp "$mpdcurrentsong_dir/mpdcurrentsong" /usr/local/bin/mpdcurrentsong
-cp "$mpdcurrentsong_dir/mpdplaystate" /usr/local/bin/mpdplaystate
-cp "$mpdcurrentsong_dir/mpdtime" /usr/local/bin/mpdtime
+cp "$mpdcurrentsong_dir/mpdcurrentsong" /usr/local/bin/
+cp "$mpdcurrentsong_dir/mpdplaystate" /usr/local/bin/
+cp "$mpdcurrentsong_dir/mpdtime" /usr/local/bin/
 
 # Build StoryBox binary
 print_heading 'Building StoryBox binary...'
-storybox_binary_dir="$go_src_dir/StoryBox"
-
-cd "$storybox_binary_dir" && \
+storybox_binary_dir="$go_src_dir/StoryBox/cmd/storybox"
+cd "$storybox_binary_dir"
 go build -o "$go_src_dir/StoryBox/StoryBox"
 
 # Copy StoryBox binary
 print_heading 'Copying StoryBox binary...'
+mkdir -p /usr/local/bin/StoryBox
 cp "$go_src_dir/StoryBox/StoryBox" /usr/local/bin/StoryBox/
 
 # Clone the StoryBox-Startup repository
 print_heading 'Cloning the StoryBox-Startup repository...'
 storybox_startup_repo="$go_src_dir/StoryBox-Startup"
-
-git clone "https://github.com/ozfive/StoryBox-Startup.git" "$storybox_startup_repo"
+git clone "https://github.com/$repo_owner/StoryBox-Startup.git" "$storybox_startup_repo"
 
 # Build the Startup binary
 print_heading 'Building the Startup binary...'
-cd "$storybox_startup_repo" && \
+cd "$storybox_startup_repo"
 go build -o "$go_src_dir/StoryBox-Startup/Startup"
 
 # Copy the Startup binary
 print_heading 'Copying the Startup binary...'
-cp "$go_src_dir/StoryBox-Startup/Startup" /usr/local/bin
+cp "$go_src_dir/StoryBox-Startup/Startup" /usr/local/bin/
 
 # Set up systemd service
 print_heading 'Setting up systemd service...'
 systemd_service_file="/lib/systemd/system/storyboxstartup.service"
-
 cp "$storybox_startup_repo/storyboxstartup.service" "$systemd_service_file"
 chmod 644 "$systemd_service_file"
 systemctl enable storyboxstartup.service
@@ -202,28 +214,25 @@ print_heading 'Setting up sound files...'
 sound_dir="/etc/sound"
 started_mp3_file="$sound_dir/started.mp3"
 
-if [ ! -d "$sound_dir" ]; then
-    mkdir "$sound_dir"
-fi
+mkdir -p "$sound_dir"
 
 if [ ! -f "$started_mp3_file" ]; then
     print_heading 'Copying started.mp3 to /etc/sound/'
     started_mp3_source="$storybox_startup_repo/started.mp3"
-
     cp "$started_mp3_source" "$started_mp3_file"
     print_heading 'Copy completed...'
 else
-    print_warning 'File exists. Skipping...'
+    print_warning 'started.mp3 already exists. Skipping...'
 fi
 
 # Copy the rest of the sound files to /etc/sound/
 sound_files_source="$go_src_dir/StoryBox/sys-audio/"
-
 cp -R "$sound_files_source" "$sound_dir/"
 
+# Final message
 print_success 'Installation completed successfully!'
 
 print_warning 'Please review the script and make any necessary adjustments specific to your environment before executing it.'
 
-# Start the storyboxstartup.service file
+# Start the storyboxstartup.service
 systemctl start storyboxstartup.service

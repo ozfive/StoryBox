@@ -77,6 +77,7 @@ func initializeTables(db *sql.DB) error {
 		id           INTEGER PRIMARY KEY AUTOINCREMENT,
 		url          TEXT,
 		playlistname TEXT
+		status	   TEXT DEFAULT 'stopped'
 	);`
 
 	_, err := db.Exec(rfidTable)

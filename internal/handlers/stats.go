@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"os/exec"
-	"strings"
 
 	"github.com/kataras/iris/v12"
 
+	"StoryBox/internal/mpdstats"
 	"StoryBox/internal/services"
 )
 
@@ -28,8 +28,7 @@ func InitStatsHandlers(app *iris.Application, soundService services.SoundService
 
 func currentStatsHandler(soundService services.SoundService) iris.Handler {
 	return func(ctx iris.Context) {
-		cmd := exec.Command("./mpdcurrentsong")
-		output, err := cmd.Output()
+		song, err := mpdstats.GetCurrentSongInfo()
 		if err != nil {
 			soundService.PlayErrorNotification()
 			ctx.StatusCode(500)
@@ -41,7 +40,9 @@ func currentStatsHandler(soundService services.SoundService) iris.Handler {
 			return
 		}
 
-		data := parseKeyValueOutput(string(output))
+		data := map[string]string{
+			"current_song": song,
+		}
 		soundService.PlayReadyNotification()
 		ctx.JSON(iris.Map{
 			"status_code": 200,
@@ -77,8 +78,7 @@ func stopCurrentPlaylistHandler(soundService services.SoundService) iris.Handler
 
 func playlistElapsedTimeHandler(soundService services.SoundService) iris.Handler {
 	return func(ctx iris.Context) {
-		cmd := exec.Command("./mpdtime")
-		output, err := cmd.Output()
+		elapsed, err := mpdstats.GetElapsedTime()
 		if err != nil {
 			soundService.PlayErrorNotification()
 			ctx.StatusCode(500)
@@ -90,24 +90,14 @@ func playlistElapsedTimeHandler(soundService services.SoundService) iris.Handler
 			return
 		}
 
-		elapsedTime := strings.TrimSpace(string(output))
+		data := map[string]interface{}{
+			"elapsed_time": elapsed,
+		}
 		soundService.PlayReadyNotification()
 		ctx.JSON(iris.Map{
 			"status_code": 200,
 			"message":     "Elapsed Time",
-			"data":        elapsedTime,
+			"data":        data,
 		})
 	}
-}
-
-func parseKeyValueOutput(output string) map[string]string {
-	data := make(map[string]string)
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		parts := strings.SplitN(line, "\t", 2)
-		if len(parts) == 2 {
-			data[parts[0]] = parts[1]
-		}
-	}
-	return data
 }

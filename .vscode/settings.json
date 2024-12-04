@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "client.h": "c"
+        "client.h": "c",
+        "mpdcurrentsong.h": "c",
+        "stdio.h": "c",
+        "stdlib.h": "c",
+        "playlist.h": "c",
+        "typeinfo": "c"
     }
 }

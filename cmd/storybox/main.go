@@ -21,9 +21,8 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 
-	// Initialize and run the application
+	// Initialize the application
 	api := app.NewApp(config)
-
 	runAddress := iris.Addr(config.Address + ":" + config.Port)
 
 	// Run the application

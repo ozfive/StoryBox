@@ -33,32 +33,46 @@
 #define MPD_PORT 0
 #define MPD_PASSWORD "yL25v21jRJGMOz6P3F"
 
-int main(void)
-{
-	unsigned time = 0;
+unsigned int get_elapsed_time() {
 	struct mpd_connection *conn;
 	struct mpd_status *status;
-	enum mpd_state state;
+	unsigned int elapsed = 0;
 
 	conn = mpd_connection_new(MPD_HOST, MPD_PORT, 0);
-
-	mpd_run_password(conn, MPD_PASSWORD);
-	status = mpd_run_status(conn);
-	if (!status) {
+	if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS) {
+		mpd_connection_free(conn);
 		return 0;
 	}
 
-	time = mpd_status_get_elapsed_time(status);
-
-	state = mpd_status_get_state(status);
-
-	mpd_status_free(status);
-
-	mpd_connection_free(conn);
-
-	if (state > 1) {
-		printf("%u\n", time);
+	mpd_run_password(conn, MPD_PASSWORD);
+	status = mpd_run_status(conn);
+	if (status != NULL) {
+		elapsed = mpd_status_get_elapsed_time(status);
+		mpd_status_free(status);
 	}
 
-	return 0;
+	mpd_connection_free(conn);
+	return elapsed;
+}
+
+unsigned int get_total_time() {
+	struct mpd_connection *conn;
+	struct mpd_status *status;
+	unsigned int total = 0;
+
+	conn = mpd_connection_new(MPD_HOST, MPD_PORT, 0);
+	if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS) {
+		mpd_connection_free(conn);
+		return 0;
+	}
+
+	mpd_run_password(conn, MPD_PASSWORD);
+	status = mpd_run_status(conn);
+	if (status != NULL) {
+		total = mpd_status_get_total_time(status);
+		mpd_status_free(status);
+	}
+
+	mpd_connection_free(conn);
+	return total;
 }

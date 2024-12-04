@@ -76,24 +76,58 @@ fi
 ### 
 ### Modify repo_owner to your GitHub username 
 ### if you want to use your own repository.
+### set the go_version to the version of Go 
+### you want to install.
 ### 
 repo_owner="ozfive"
+go_version="1.23.3"
 
-# Set up Go environment
-print_heading 'Setting up Go environment...'
+# Set up Go environment variables
+go_tarball="go${go_version}.linux-armv6l.tar.gz"
+go_tar_url="https://go.dev/dl/$go_tarball"
+
 base_dir="/home/pi"
 go_base_dir="$base_dir/go"
 go_src_dir="$go_base_dir/src"
 go_pkg_dir="$go_base_dir/pkg"
 go_bin_dir="$go_base_dir/bin"
 
+# URLs of repositories to clone
+storybox_repo="https://github.com/$repo_owner/StoryBox.git"
+shell_scripts_repo="https://github.com/$repo_owner/StoryBoxShellScripts.git"
+
+# Path to the Witty Pi 3 Mini install script
+witty_install_script="$go_src_dir/StoryBoxShellScripts/wittypi3mini/install.sh"
+
+# Directories for MPD (Music Player Daemon) libraries and binaries
+mpd_lib_dir="$go_src_dir/StoryBox/lib/libmpdclient"
+libmpdplaylistcontrol_dir="$go_src_dir/StoryBox/lib/mpdplaylistcontrol"
+mpdcurrentsong_dir="$go_src_dir/StoryBox/lib"
+
+# Directory for building the StoryBox Go binary
+storybox_binary_dir="$go_src_dir/StoryBox/cmd/storybox"
+
+# Directory to clone the StoryBox-Startup repository
+storybox_startup_repo="$go_src_dir/StoryBox-Startup"
+
+# Sound file configurations
+sound_dir="/etc/sound"
+started_mp3_file="$sound_dir/started.mp3"
+
+# Systemd service file path
+systemd_service_file="/lib/systemd/system/storyboxstartup.service"
+
+# Source path for the startup sound file
+started_mp3_source="$storybox_startup_repo/started.mp3"
+
+sound_files_source="$go_src_dir/StoryBox/sys-audio/"
+
+# Set up Go environment
+print_heading 'Setting up Go environment...'
 mkdir -p "$go_src_dir" "$go_pkg_dir" "$go_bin_dir"
 
 # Download and install Go
 print_heading 'Downloading and installing Go...'
-go_version="1.23.3"
-go_tarball="go${go_version}.linux-armv6l.tar.gz"
-go_tar_url="https://go.dev/dl/$go_tarball"
 wget "$go_tar_url" -P /tmp
 tar -C /usr/local -xzf /tmp/$go_tarball
 rm /tmp/$go_tarball
@@ -104,7 +138,6 @@ source "$base_dir/.bashrc"
 
 # Clone the StoryBox repository
 print_heading 'Cloning the StoryBox repository...'
-storybox_repo="https://github.com/$repo_owner/StoryBox.git"
 git clone "$storybox_repo" "$go_src_dir/StoryBox"
 
 # Setup .mpd directory
@@ -120,7 +153,6 @@ cp "$go_src_dir/StoryBox/lib/mpd.conf" "$base_dir/.mpd/mpd.conf"
 
 # Set up phatbeat
 print_heading 'Setting up phatbeat...'
-shell_scripts_repo="https://github.com/$repo_owner/StoryBoxShellScripts.git"
 git clone "$shell_scripts_repo" "$go_src_dir/StoryBoxShellScripts"
 cd "$go_src_dir/StoryBoxShellScripts"
 chmod +x phatbeat.sh
@@ -128,7 +160,7 @@ chmod +x phatbeat.sh
 
 # Install Wi-Fi configuration for wittypi3mini
 print_heading 'Installing Wi-Fi configuration for wittypi3mini...'
-witty_install_script="$go_src_dir/StoryBoxShellScripts/wittypi3mini/install.sh"
+
 
 if [ -x "$witty_install_script" ]; then
   "$witty_install_script"
@@ -142,7 +174,6 @@ raspi-config nonint do_spi 0
 
 # Build and install libmpdclient
 print_heading 'Building and installing libmpdclient...'
-mpd_lib_dir="$go_src_dir/StoryBox/lib/libmpdclient"
 cd "$mpd_lib_dir"
 meson setup build
 ninja -C build
@@ -150,7 +181,6 @@ ninja -C build install
 
 # Build and install libmpdplaylistcontrol
 print_heading 'Building and installing libmpdplaylistcontrol...'
-libmpdplaylistcontrol_dir="$go_src_dir/StoryBox/lib/mpdplaylistcontrol"
 cd "$libmpdplaylistcontrol_dir"
 gcc -c mpdplaylistcontrol.c -o mpdplaylistcontrol.o
 ar rcs libmpdplaylistcontrol.a mpdplaylistcontrol.o
@@ -159,7 +189,6 @@ ldconfig
 
 # Build mpdcurrentsong
 print_heading 'Building mpdcurrentsong...'
-mpdcurrentsong_dir="$go_src_dir/StoryBox/lib"
 cd "$mpdcurrentsong_dir"
 gcc -o mpdcurrentsong mpdcurrentsong.c -lmpdclient
 
@@ -179,7 +208,6 @@ cp "$mpdcurrentsong_dir/mpdtime" /usr/local/bin/
 
 # Build StoryBox binary
 print_heading 'Building StoryBox binary...'
-storybox_binary_dir="$go_src_dir/StoryBox/cmd/storybox"
 cd "$storybox_binary_dir"
 go build -o "$go_src_dir/StoryBox/StoryBox"
 
@@ -190,7 +218,6 @@ cp "$go_src_dir/StoryBox/StoryBox" /usr/local/bin/StoryBox/
 
 # Clone the StoryBox-Startup repository
 print_heading 'Cloning the StoryBox-Startup repository...'
-storybox_startup_repo="$go_src_dir/StoryBox-Startup"
 git clone "https://github.com/$repo_owner/StoryBox-Startup.git" "$storybox_startup_repo"
 
 # Build the Startup binary
@@ -204,21 +231,16 @@ cp "$go_src_dir/StoryBox-Startup/Startup" /usr/local/bin/
 
 # Set up systemd service
 print_heading 'Setting up systemd service...'
-systemd_service_file="/lib/systemd/system/storyboxstartup.service"
 cp "$storybox_startup_repo/storyboxstartup.service" "$systemd_service_file"
 chmod 644 "$systemd_service_file"
 systemctl enable storyboxstartup.service
 
 # Set up sound files
 print_heading 'Setting up sound files...'
-sound_dir="/etc/sound"
-started_mp3_file="$sound_dir/started.mp3"
-
 mkdir -p "$sound_dir"
 
 if [ ! -f "$started_mp3_file" ]; then
     print_heading 'Copying started.mp3 to /etc/sound/'
-    started_mp3_source="$storybox_startup_repo/started.mp3"
     cp "$started_mp3_source" "$started_mp3_file"
     print_heading 'Copy completed...'
 else
@@ -226,7 +248,6 @@ else
 fi
 
 # Copy the rest of the sound files to /etc/sound/
-sound_files_source="$go_src_dir/StoryBox/sys-audio/"
 cp -R "$sound_files_source" "$sound_dir/"
 
 # Final message

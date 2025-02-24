@@ -15,6 +15,35 @@ func InitPlaylistHandlers(app *iris.Application, playlistService services.Playli
 	{
 		p.Post("/create", tollboothic.LimitHandler(limiter), createPlaylistHandler(playlistService))
 		p.Post("/delete", tollboothic.LimitHandler(limiter), deletePlaylistHandler(playlistService))
+		p.Get("/get", tollboothic.LimitHandler(limiter), GetPlaylistHandler(playlistService))
+	}
+}
+
+func GetPlaylistHandler(playlistService services.PlaylistService) iris.Handler {
+	return func(ctx iris.Context) {
+		url := ctx.URLParam("url")
+		if url == "" {
+			ctx.StatusCode(http.StatusUnprocessableEntity)
+			ctx.JSON(iris.Map{
+				"status_code": 422,
+				"message":     "URL must be provided.",
+			})
+			return
+		}
+
+		playlist, err := playlistService.GetPlaylist(url, url)
+		if err != nil {
+			ctx.StatusCode(http.StatusInternalServerError)
+			ctx.JSON(iris.Map{
+				"status_code": 500,
+				"message":     "Failed to get playlist.",
+				"data":        err.Error(),
+			})
+			return
+		}
+
+		ctx.StatusCode(http.StatusOK)
+		ctx.JSON(playlist)
 	}
 }
 

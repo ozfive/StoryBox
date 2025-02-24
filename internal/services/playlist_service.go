@@ -3,6 +3,7 @@ package services
 import (
 	"StoryBox/internal/models"
 	"StoryBox/internal/repository"
+	"fmt"
 
 	"github.com/kataras/iris/v12"
 )
@@ -28,6 +29,17 @@ func NewPlaylistService(repo repository.PlaylistRepository, soundService SoundSe
 		repo:         repo,
 		soundService: soundService,
 	}
+}
+
+func (p *playlistService) GetPlaylist(url, playlistName string) (*models.Playlist, error) {
+	if url == "" || playlistName == "" {
+		return nil, fmt.Errorf("url and playlistName must be provided")
+	}
+	playlist, err := p.repo.Get(url, playlistName)
+	if err != nil {
+		return nil, err
+	}
+	return playlist, nil
 }
 
 func (p *playlistService) CreatePlaylist(ctx iris.Context, url, playlistName string) error {
@@ -57,10 +69,6 @@ func (p *playlistService) ClearPlaylist(playlistName string) error {
 
 func (p *playlistService) DeletePlaylist(url, playlistName string) error {
 	return p.repo.Delete(url, playlistName)
-}
-
-func (p *playlistService) GetPlaylist(url, playlistName string) (*models.Playlist, error) {
-	return p.repo.Get(url, playlistName)
 }
 
 func (p *playlistService) LoadPlaylist(playlistName string) error {
